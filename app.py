@@ -146,11 +146,15 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
+    # Prepare the table
     display_df = results[['brand', 'Address', 'Price']].copy()
+    
+    # Create the Map link
     display_df['Map'] = results['Address'].apply(
-        lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
+        lambda x: f"http://google.com/maps/search/{urllib.parse.quote(x + ', Quebec')}"
     )
     
+    # The Dataframe (This is where brackets usually break)
     st.dataframe(
         display_df,
         column_config={
