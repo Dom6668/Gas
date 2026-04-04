@@ -43,53 +43,53 @@ st.sidebar.header("📍 Find by Distance")
 user_pc = st.sidebar.text_input("Enter Postal Code (e.g., H3B 1A1)").upper().replace(" ", "")
 search_radius = st.sidebar.slider("Distance (km)", 1, 50, 10)
 
-# --- 3. PROXIMITY LOGIC ---
+# --- 3. FILTERING LOGIC ---
 results = df.copy()
 
-if len(user_pc) >= 3:
-    # Get the lat/lon for the typed postal code
+# A. Handle Postal Code (Proximity)
+if user_pc and len(user_pc) >= 3:
     user_location = nomi.query_postal_code(user_pc)
-    
     if not pd.isna(user_location.latitude):
-        # Calculate distance for every station in the list
-        # We compare user lat/lon vs station lat/lon
+        # Calculate distance
         results['Dist_km'] = dist_calc.query_postal_code(
             [user_pc] * len(results), 
             results['lat'], 
             results['lon']
         )
-        
-        # Filter by your selected distance
         results = results[results['Dist_km'] <= search_radius]
         results = results.sort_values('Dist_km')
-        
-        st.success(f"Showing stations within {search_radius}km of {user_pc}")
     else:
         st.sidebar.error("Postal code not recognized.")
 
-# --- 4. DISPLAY ---
-if not results.empty:
-    # Add the Map Link
-    results['Map'] = results['Address'].apply(
-        lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
-    )
-    
-    # Final Table
-    st.dataframe(
-        results[['Name', 'brand', 'Address', 'Price', 'Dist_km', 'Map']],
-        column_config={
-            "Map": st.column_config.LinkColumn("View on Map", display_text="Click to View"),
-            "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f"),
-            "Dist_km": st.column_config.NumberColumn("Distance (km)", format="%.1f")
-        },
-        hide_index=True,
-        use_container_width=True
-    )
+# B. Handle City Search (Optional - if you still have city_query in your sidebar)
+# Note: Ensure city_query is defined in your sidebar section!
+if 'city_query' in locals() and city_query:
+    search_term = simplify(city_query)
+    results = results[results['Address'].apply(simplify).str.contains(search_term)]
+
+# --- 4. DISPLAY RESULTS ---
+if (user_pc and len(user_pc) >= 3) or ( 'city_query' in locals() and city_query):
+    if not results.empty:
+        # Create Map Links
+        results['Map'] = results['Address'].apply(
+            lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
+        )
+        
+        # Build Table
+        st.dataframe(
+            results[['Name', 'brand', 'Address', 'Price', 'Dist_km', 'Map']],
+            column_config={
+                "Map": st.column_config.LinkColumn("View on Map", display_text="Click to View"),
+                "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f"),
+                "Dist_km": st.column_config.NumberColumn("Distance (km)", format="%.1f")
+            },
+            hide_index=True,
+            use_container_width=True
+        )
+    else:
+        st.warning("No stations found matching those filters.")
 else:
-    st.info("Enter a postal code in the sidebar to find gas near you.")    search_term = simplify(city_query)
-    df['s_addr'] = df['Address'].apply(simplify)
-    df['s_reg'] = df['Region'].apply(simplify)
-    results = results[df['s_addr'].str.contains(search_term) | df['s_reg'].str.contains(search_term)]
+    st.info("👈 Use the sidebar to search by Postal Code or City.")
 
 # Apply Brand Filter
 if selected_brands:
