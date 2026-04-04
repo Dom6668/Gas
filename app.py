@@ -16,8 +16,10 @@ def get_price(price_list):
     if not isinstance(price_list, list): return None
     for item in price_list:
         if item.get('GasType') == 'Régulier' and item.get('IsAvailable'):
-            try: return float(item.get('Price', '').replace('¢', ''))
-            except: return None
+            try: 
+                return float(item.get('Price', '').replace('¢', ''))
+            except: 
+                return None
     return None
 
 @st.cache_data(ttl=300) 
@@ -61,6 +63,31 @@ selected_brands = st.sidebar.multiselect("Add Other Brands", options=all_brands)
 st.sidebar.divider()
 show_favorites = st.sidebar.checkbox("⭐ Show Only My Favorites (Esso/Couche-Tard)", value=True)
 
+# Montreal Average Metric
+if not df.empty:
+    st.sidebar.divider()
+    # Logic to find Montreal stations for the benchmark
+    mtl_data = df[df['Address'].apply(simplify).str.contains("montreal")]
+    if not mtl_data['Price'].empty:
+        mtl_avg = mtl_data['Price'].mean()
+        st.sidebar.metric("Montreal Average", f"{mtl_avg:.1f}¢")
+
+# --- 5. FILTERING LOGIC ---
+results = df.copy()
+my_favorites = ["Esso", "Couche-Tard"]
+
+# Apply "Favorites" or "Selected Brands"
+if show_favorites:
+    results = results[results['brand'].isin(my_favorites)]
+elif selected_brands:
+    results = results[results['brand'].isin(selected_brands)]
+
+# Apply City Filter
+if city_query:
+    search_term = simplify(city_query)
+    # Using a clean search against Address and Region
+    results = results[
+        results['Address'].apply(simplify).str.contains(search_term) |
 # Montreal Average Metric
 if not df.empty:
     st.sidebar.divider()
