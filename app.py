@@ -39,9 +39,10 @@ st.sidebar.header("Search Filters")
 # 🏙️ City Search
 city_query = st.sidebar.text_input("Enter City (e.g. Montreal)", "")
 
-# 🏷️ Brand Filter
-# Get a unique list of all brands from the data, sorted alphabetically
-all_brands = sorted(df['brand'].unique().tolist())
+# 🏷️ Brand Filter (with Safety Check)
+# We convert all brands to strings and remove empty ones
+brand_list = df['brand'].dropna().unique().tolist()
+all_brands = sorted([str(b) for b in brand_list])
 selected_brands = st.sidebar.multiselect("Filter by Brand", all_brands)
 
 # --- 4. FILTERING LOGIC ---
