@@ -67,11 +67,7 @@ selected_brands = st.sidebar.multiselect(
     "Filter by Brand", 
     options=all_brands,
     default=["Esso", "Couche-Tard"]
-
-# Provincial Average Metric
-if not df['Price'].empty:
-    st.sidebar.divider()
-    st.sidebar.metric("Provincial Average", f"{df['Price'].mean():.1f}¢")
+)
 
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
