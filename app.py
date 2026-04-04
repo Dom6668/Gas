@@ -100,15 +100,16 @@ if not df.empty:
 results = df.copy()
 my_favorites = ["Esso", "Couche-Tard"]
 
-# Apply "Favorites" or "Selected Brands"
+# 1. Apply "Favorites" or "Selected Brands"
 if show_favorites:
     results = results[results['brand'].isin(my_favorites)]
 elif selected_brands:
     results = results[results['brand'].isin(selected_brands)]
 
-# Apply City Filter
+# 2. Apply City Filter
 if city_query:
     search_term = simplify(city_query)
+    # This is line 89-94 area: Note how every [ has a matching ]
     results = results[
         results['Address'].apply(simplify).str.contains(search_term) | 
         results['Region'].apply(simplify).str.contains(search_term)
