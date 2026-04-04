@@ -69,13 +69,6 @@ options=all_brands,
 default=["Esso", "Couche-Tard"]
 )
 
-# --- NEW: PROVINCIAL AVERAGE (Place this BEFORE filtering) ---
-if not df['Price'].empty:
-    st.sidebar.divider()
-    # This calculates the average of ALL stations in Quebec before we filter them
-    prov_avg = df['Price'].mean()
-    st.sidebar.metric("Quebec Average", f"{prov_avg:.1f}¢")
-
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
 
