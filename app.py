@@ -74,7 +74,10 @@ if city_query or selected_brands:
         st.dataframe(
             display_df,
             column_config={
-                "Map": st.column_config.LinkColumn("View on Map"),
+               "Map": st.column_config.LinkColumn(
+                    "View on Map", 
+                    display_text="Click to View on Map"  # <--- This is the magic line
+                ),
                 "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f")
             },
             hide_index=True,
