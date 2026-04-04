@@ -50,17 +50,66 @@ df = fetch_data()
 st.sidebar.header("Search Filters")
 
 # City Search - Default Montreal
-city_query = st.sidebar.text_input("Enter City (e.g. Montreal)", value="Montreal")
+city_query = st.sidebar.text_input("Enter City", value="Montreal")
 
-# Brand Filter - Default Esso and Couche-Tard
+# Brand Selection
 brand_list = df['brand'].dropna().unique().tolist()
 all_brands = sorted([str(b) for b in brand_list])
-selected_brands = st.sidebar.multiselect(
-    "Filter by Brand", 
-    options=all_brands,
-    default=["Esso", "Couche-Tard"]
+selected_brands = st.sidebar.multiselect("Add Other Brands", options=all_brands)
 
-# ... (keep your existing city_query and selected_brands code) ...
+# Favorites Toggle
+st.sidebar.divider()
+show_favorites = st.sidebar.checkbox("⭐ Show Only My Favorites (Esso/Couche-Tard)", value=True)
+
+# Montreal Average Metric
+if not df.empty:
+    st.sidebar.divider()
+    mtl_data = df[df['Address'].apply(simplify).str.contains("montreal")]
+    if not mtl_data['Price'].empty:
+        mtl_avg = mtl_data['Price'].mean()
+        st.sidebar.metric("Montreal Average", f"{mtl_avg:.1f}¢")
+
+# --- 5. FILTERING LOGIC ---
+results = df.copy()
+my_favorites = ["Esso", "Couche-Tard"]
+
+# Apply "Favorites" or "Selected Brands"
+if show_favorites:
+    results = results[results['brand'].isin(my_favorites)]
+elif selected_brands:
+    results = results[results['brand'].isin(selected_brands)]
+
+# Apply City Filter
+if city_query:
+    search_term = simplify(city_query)
+    results = results[
+        results['Address'].apply(simplify).str.contains(search_term) | 
+        results['Region'].apply(simplify).str.contains(search_term)
+    ]
+
+# --- 6. DISPLAY RESULTS ---
+if not results.empty:
+    results = results.sort_values(by='Price')
+    st.success(f"Found {len(results)} stations")
+    
+    display_df = results[['brand', 'Address', 'Price']].copy()
+    display_df['Map'] = results['Address'].apply(
+        lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
+    )
+    
+    st.dataframe(
+        display_df,
+        column_config={
+           "brand": "Brand",
+           "Address": "Station Address",
+           "Map": st.column_config.LinkColumn("View on Map", display_text="Click to View"),
+           "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f")
+        },
+        hide_index=True,
+        use_container_width=True
+    )
+else:
+    st.warning("No stations found. Try unchecking 'Favorites' or changing the city.")# ... (keep your existing city_query and selected_brands code) ...
 
 st.sidebar.divider()
 show_favorites = st.sidebar.checkbox("⭐ Show Only My Favorites", value=True)
