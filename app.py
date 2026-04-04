@@ -154,21 +154,18 @@ if city_query or selected_brands:
             lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
         )
         
-        st.dataframe(
-            display_df,
-            column_config={
-               "brand": "Brand",
-               "Address": "Station Address",
-               "Map": st.column_config.LinkColumn(
-                    "View on Map", 
-                    display_text="Click to View on Map"
-                ),
-                "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f")
-            },
-            hide_index=True,
-            use_container_width=True
-        )
-    else:
-        st.error("No stations found. Try broadening your search!")
-else:
-    st.info("👈 Search by City or Brand in the sidebar to begin.")
+        # Updated table with cleaner columns
+    st.dataframe(
+        display_df,
+        column_config={
+           "brand": "Brand",
+           "Address": "Station Address",
+           "Map": st.column_config.LinkColumn(
+                "View on Map", 
+                display_text="Click to View"
+            ),
+            "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f")
+        },
+        hide_index=True,
+        use_container_width=True
+    ) # <--- This should be the ONLY closing parenthesis here
