@@ -66,7 +66,7 @@ st.sidebar.divider()
 show_favorites = st.sidebar.checkbox("⭐ Show Only My Favorites", value=True)
 
 # Define what "Favorites" means to you
-my_favorite_brands = ["Esso", "Couche-Tard"]
+my_favorite_brands = ["Esso", "Couche-Tard"]    
 )
 
 # --- NEW: MONTREAL AVERAGE CALCULATION ---
