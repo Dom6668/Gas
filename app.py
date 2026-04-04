@@ -62,19 +62,24 @@ city_query = st.sidebar.text_input("Enter City (e.g. Montreal)", value="Montreal
 brand_list = df['brand'].dropna().unique().tolist()
 all_brands = sorted([str(b) for b in brand_list])
 
-# We use the 'default' parameter to pre-select brands
-selected_brands = st.sidebar.multiselect(
-    "Filter by Brand", 
-    options=all_brands,
-    default=["Esso", "Couche-Tard"]
-)
-
-# --- NEW: PROVINCIAL AVERAGE (Place this BEFORE filtering) ---
-if not df['Price'].empty:
+# --- NEW: MONTREAL-SPECIFIC AVERAGE ---
+if not df.empty:
     st.sidebar.divider()
-    # This calculates the average of ALL stations in Quebec before we filter them
-    prov_avg = df['Price'].mean()
-    st.sidebar.metric("Quebec Average", f"{prov_avg:.1f}¢")
+    
+    # 1. Create a "clean" city column for a fair calculation
+    # This ensures "Montréal" and "montreal" are treated the same
+    df['clean_city'] = df['Address'].apply(simplify)
+    
+    # 2. Filter for only Montreal stations
+    mtl_stations = df[df['clean_city'].str.contains("montreal")]
+    
+    # 3. Calculate and display the average
+    if not mtl_stations['Price'].empty:
+        mtl_avg = mtl_stations['Price'].mean()
+        st.sidebar.metric("Montreal Average", f"{mtl_avg:.1f}¢")
+    else:
+        # Fallback if no Montreal data is found
+        st.sidebar.metric("Quebec Average", f"{df['Price'].mean():.1f}¢")
 
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
