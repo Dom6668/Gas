@@ -75,18 +75,23 @@ if city_query or selected_brands:
 
     if not results.empty:
         st.success(f"Found {len(results)} stations matching your criteria")
+
+        # We REMOVED 'Name' from this list below:
+        display_df = results[['brand', 'Address', 'Price']].copy()
         
-        display_df = results[['Name', 'brand', 'Address', 'Price']].copy()
-        display_df['Map'] = display_df['Address'].apply(
+        display_df['Map'] = results['Address'].apply(
             lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
         )
         
+        # Updated table with cleaner columns
         st.dataframe(
             display_df,
             column_config={
+               "brand": "Brand",
+               "Address": "Station Address",
                "Map": st.column_config.LinkColumn(
                     "View on Map", 
-                    display_text="Click to View on Map"  # <--- This is the magic line
+                    display_text="Click to View on Map"
                 ),
                 "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f")
             },
