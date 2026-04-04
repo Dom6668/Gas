@@ -55,11 +55,18 @@ df = fetch_data()
 # --- 4. SIDEBAR SETUP ---
 st.sidebar.header("Search Filters")
 
-city_query = st.sidebar.text_input("Enter City (e.g. Montreal)", "")
+# 🏙️ City Search - Set default to "Montreal"
+city_query = st.sidebar.text_input("Enter City (e.g. Montreal)", value="Montreal")
 
+# 🏷️ Brand Filter - Set defaults to "Esso" and "Couche-Tard"
 brand_list = df['brand'].dropna().unique().tolist()
 all_brands = sorted([str(b) for b in brand_list])
-selected_brands = st.sidebar.multiselect("Filter by Brand", all_brands)
+
+# We use the 'default' parameter to pre-select brands
+selected_brands = st.sidebar.multiselect(
+    "Filter by Brand", 
+    options=all_brands,
+    default=["Esso", "Couche-Tard"]
 
 # Provincial Average Metric
 if not df['Price'].empty:
