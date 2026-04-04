@@ -31,10 +31,16 @@ def fetch_data():
     return df
 
 # --- 3. THE USER INTERFACE ---
-if st.sidebar.button("🔄 Refresh Prices"):
-    # This clears the 5-minute timer and forces a new download
-    st.cache_data.clear()
-    st.rerun()
+# We use a columns layout to put the button nicely in the sidebar
+col1, col2 = st.sidebar.columns([3, 1])
+with col1:
+    st.markdown("### Controls")
+if st.sidebar.button("🔄 Sync Live Prices"):
+    # Clear ONLY the fetch_data function's cache
+    fetch_data.clear()
+    st.sidebar.success("Prices Updated!")
+    # We DON'T use st.rerun() here; Streamlit will naturally 
+    # re-run the script and see the cache is empty.
 df = fetch_data()
 
 # Sidebar Setup
