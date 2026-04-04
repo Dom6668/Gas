@@ -142,30 +142,25 @@ if selected_brands:
     results = results[results['brand'].isin(selected_brands)]
 
 # --- 6. DISPLAY RESULTS ---
-if city_query or selected_brands:
+if not results.empty:
     results = results.sort_values(by='Price')
-
-    if not results.empty:
-        st.success(f"Found {len(results)} stations matching your criteria")
-        
-        display_df = results[['brand', 'Address', 'Price']].copy()
-        
-        display_df['Map'] = results['Address'].apply(
-            lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
-        )
-        
-        # Updated table with cleaner columns
+    st.success(f"Found {len(results)} stations")
+    
+    display_df = results[['brand', 'Address', 'Price']].copy()
+    display_df['Map'] = results['Address'].apply(
+        lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
+    )
+    
     st.dataframe(
         display_df,
         column_config={
            "brand": "Brand",
            "Address": "Station Address",
-           "Map": st.column_config.LinkColumn(
-                "View on Map", 
-                display_text="Click to View"
-            ),
-            "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f")
+           "Map": st.column_config.LinkColumn("View on Map", display_text="Click to View"),
+           "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f")
         },
         hide_index=True,
         use_container_width=True
-    ) # <--- This should be the ONLY closing parenthesis here
+    )
+else:
+    st.warning("No stations found. Try unchecking 'Favorites' or changing the city.")
