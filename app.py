@@ -33,30 +33,43 @@ def fetch_data():
 # --- 3. THE USER INTERFACE ---
 df = fetch_data()
 
-# Sidebar Search
+# Sidebar Setup
 st.sidebar.header("Search Filters")
+
+# 🏙️ City Search
 city_query = st.sidebar.text_input("Enter City (e.g. Montreal)", "")
 
+# 🏷️ Brand Filter
+# Get a unique list of all brands from the data, sorted alphabetically
+all_brands = sorted(df['brand'].unique().tolist())
+selected_brands = st.sidebar.multiselect("Filter by Brand", all_brands)
+
+# --- 4. FILTERING LOGIC ---
+results = df.copy()
+
+# Apply City Filter
 if city_query:
     search_term = simplify(city_query)
     df['s_addr'] = df['Address'].apply(simplify)
     df['s_reg'] = df['Region'].apply(simplify)
-    
-    results = df[df['s_addr'].str.contains(search_term) | df['s_reg'].str.contains(search_term)].copy()
+    results = results[df['s_addr'].str.contains(search_term) | df['s_reg'].str.contains(search_term)]
+
+# Apply Brand Filter
+if selected_brands:
+    results = results[results['brand'].isin(selected_brands)]
+
+# --- 5. DISPLAY RESULTS ---
+if city_query or selected_brands:
     results = results.sort_values(by='Price')
 
     if not results.empty:
-        st.success(f"Found {len(results)} stations in {city_query}")
+        st.success(f"Found {len(results)} stations matching your criteria")
         
-        # Create a display-friendly version
         display_df = results[['Name', 'brand', 'Address', 'Price']].copy()
-        
-        # Add a "Map" column that creates a link
         display_df['Map'] = display_df['Address'].apply(
             lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
         )
         
-        # Display the table with clickable links
         st.dataframe(
             display_df,
             column_config={
@@ -67,10 +80,9 @@ if city_query:
             use_container_width=True
         )
     else:
-        st.error("No stations found for that city.")
+        st.error("No stations found. Try broadening your search!")
 else:
-    st.info("👈 Enter a city in the sidebar to see local prices.")
-
+    st.info("👈 Search by City or Brand in the sidebar to begin.")
 # Summary Stat
 if not df['Price'].empty:
     st.sidebar.divider()
