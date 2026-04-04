@@ -29,20 +29,25 @@ def fetch_data():
     return df
 
 # --- 3. THE USER INTERFACE (Header & Refresh) ---
-# We create two columns for the title and the button
-col_title, col_btn = st.columns([3, 1])
+# We use a 2-column layout to force them onto the same line
+col_title, col_btn = st.columns([5, 2])
 
 with col_title:
-    st.title("⛽ Live Gas Prices")
+    # Using a markdown header instead of st.title to keep the line height slim
+    st.markdown("## ⛽ Live Gas Prices")
 
 with col_btn:
-    # Adding some empty space to align the button with the text
-    st.write("##") 
+    # A tiny bit of top padding to center the button vertically with the text
+    st.write(" ") 
     if st.button("🔄 Refresh"):
         fetch_data.clear()
         st.rerun()
 
 st.markdown("Find the cheapest gas near you. Data updates every 5 minutes.")
+st.divider()
+
+# Load Data
+df = fetch_data()
 
 # Load Data
 df = fetch_data()
