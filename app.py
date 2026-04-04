@@ -6,7 +6,7 @@ import urllib.parse
 
 # --- 1. APP CONFIG ---
 st.set_page_config(page_title="Quebec Gas Tracker", page_icon="⛽")
-st.title("⛽ Live Quebec Gas Prices")
+st.title("⛽ Live Gas Prices")
 st.markdown("Find the cheapest gas near you. Data updates every 5 minutes.")
 
 # --- 2. THE LOGIC (Same as your Colab) ---
@@ -31,6 +31,10 @@ def fetch_data():
     return df
 
 # --- 3. THE USER INTERFACE ---
+if st.sidebar.button("🔄 Refresh Prices"):
+    # This clears the 5-minute timer and forces a new download
+    st.cache_data.clear()
+    st.rerun()
 df = fetch_data()
 
 # Sidebar Setup
