@@ -6,10 +6,8 @@ import urllib.parse
 
 # --- 1. APP CONFIG ---
 st.set_page_config(page_title="Quebec Gas Tracker", page_icon="⛽")
-st.title("⛽ Live Gas Prices")
-st.markdown("Find the cheapest gas near you. Data updates every 5 minutes.")
 
-# --- 2. THE LOGIC (Same as your Colab) ---
+# --- 2. THE LOGIC ---
 def simplify(text):
     if not isinstance(text, str): return ""
     return "".join([c for c in unicodedata.normalize('NFKD', text) if not unicodedata.combining(c)]).lower()
@@ -22,7 +20,7 @@ def get_price(price_list):
             except: return None
     return None
 
-@st.cache_data(ttl=300) # This keeps the app fast by caching data for 5 mins
+@st.cache_data(ttl=300) 
 def fetch_data():
     url = "https://regieessencequebec.ca/stations.geojson.gz"
     resp = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
@@ -30,46 +28,54 @@ def fetch_data():
     df['Price'] = df['Prices'].apply(get_price)
     return df
 
-# --- 3. THE USER INTERFACE ---
-# We use a columns layout to put the button nicely in the sidebar
-col1, col2 = st.sidebar.columns([3, 1])
-with col1:
-    st.markdown("### Controls")
-if st.sidebar.button("🔄 Sync Live Prices"):
-    # Clear ONLY the fetch_data function's cache
-    fetch_data.clear()
-    st.sidebar.success("Prices Updated!")
-    # We DON'T use st.rerun() here; Streamlit will naturally 
-    # re-run the script and see the cache is empty.
+# --- 3. THE USER INTERFACE (Header & Refresh) ---
+# We create two columns for the title and the button
+col_title, col_btn = st.columns([3, 1])
+
+with col_title:
+    st.title("⛽ Live Gas Prices")
+
+with col_btn:
+    # Adding some empty space to align the button with the text
+    st.write("##") 
+    if st.button("🔄 Refresh"):
+        fetch_data.clear()
+        st.rerun()
+
+st.markdown("Find the cheapest gas near you. Data updates every 5 minutes.")
+
+# Load Data
 df = fetch_data()
 
-# Sidebar Setup
+# --- 4. SIDEBAR SETUP ---
 st.sidebar.header("Search Filters")
 
-# 🏙️ City Search
 city_query = st.sidebar.text_input("Enter City (e.g. Montreal)", "")
 
-# 🏷️ Brand Filter (with Safety Check)
-# We convert all brands to strings and remove empty ones
 brand_list = df['brand'].dropna().unique().tolist()
 all_brands = sorted([str(b) for b in brand_list])
 selected_brands = st.sidebar.multiselect("Filter by Brand", all_brands)
 
-# --- 4. FILTERING LOGIC ---
+# Provincial Average Metric
+if not df['Price'].empty:
+    st.sidebar.divider()
+    st.sidebar.metric("Provincial Average", f"{df['Price'].mean():.1f}¢")
+
+# --- 5. FILTERING LOGIC ---
 results = df.copy()
 
-# Apply City Filter
 if city_query:
     search_term = simplify(city_query)
-    df['s_addr'] = df['Address'].apply(simplify)
-    df['s_reg'] = df['Region'].apply(simplify)
-    results = results[df['s_addr'].str.contains(search_term) | df['s_reg'].str.contains(search_term)]
+    # Applying simplify to the local df for filtering
+    df_temp = df.copy()
+    df_temp['s_addr'] = df_temp['Address'].apply(simplify)
+    df_temp['s_reg'] = df_temp['Region'].apply(simplify)
+    results = results[(df_temp['s_addr'].str.contains(search_term)) | (df_temp['s_reg'].str.contains(search_term))]
 
-# Apply Brand Filter
 if selected_brands:
     results = results[results['brand'].isin(selected_brands)]
 
-# --- 5. DISPLAY RESULTS ---
+# --- 6. DISPLAY RESULTS ---
 if city_query or selected_brands:
     results = results.sort_values(by='Price')
 
@@ -86,7 +92,7 @@ if city_query or selected_brands:
             column_config={
                "Map": st.column_config.LinkColumn(
                     "View on Map", 
-                    display_text="Click to View on Map"  # <--- This is the magic line
+                    display_text="Click to View on Map"
                 ),
                 "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f")
             },
@@ -97,7 +103,3 @@ if city_query or selected_brands:
         st.error("No stations found. Try broadening your search!")
 else:
     st.info("👈 Search by City or Brand in the sidebar to begin.")
-# Summary Stat
-if not df['Price'].empty:
-    st.sidebar.divider()
-    st.sidebar.metric("Provincial Average", f"{df['Price'].mean():.1f}¢")
