@@ -29,15 +29,12 @@ def fetch_data():
     return df
 
 # --- 3. THE USER INTERFACE (Header & Refresh) ---
-# We use a 2-column layout to force them onto the same line
 col_title, col_btn = st.columns([5, 2])
 
 with col_title:
-    # Using a markdown header instead of st.title to keep the line height slim
     st.markdown("## ⛽ Live Gas Prices")
 
 with col_btn:
-    # A tiny bit of top padding to center the button vertically with the text
     st.write(" ") 
     if st.button("🔄 Refresh"):
         fetch_data.clear()
@@ -49,36 +46,40 @@ st.divider()
 # Load Data
 df = fetch_data()
 
-# Load Data
-df = fetch_data()
-
 # --- 4. SIDEBAR SETUP ---
 st.sidebar.header("Search Filters")
 
-# 🏙️ City Search - Set default to "Montreal"
+# City Search - Default Montreal
 city_query = st.sidebar.text_input("Enter City (e.g. Montreal)", value="Montreal")
 
-# 🏷️ Brand Filter - Set defaults to "Esso" and "Couche-Tard"
+# Brand Filter - Default Esso and Couche-Tard
 brand_list = df['brand'].dropna().unique().tolist()
 all_brands = sorted([str(b) for b in brand_list])
-
-# We use the 'default' parameter to pre-select brands
 selected_brands = st.sidebar.multiselect(
     "Filter by Brand", 
     options=all_brands,
     default=["Esso", "Couche-Tard"]
 )
 
+# --- NEW: MONTREAL AVERAGE CALCULATION ---
+if not df.empty:
+    st.sidebar.divider()
+    # Filter full dataset for Montreal stations to get the average
+    mtl_data = df[df['Address'].apply(simplify).str.contains("montreal")]
+    if not mtl_data['Price'].empty:
+        mtl_avg = mtl_data['Price'].mean()
+        st.sidebar.metric("Montreal Average", f"{mtl_avg:.1f}¢")
+
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
 
 if city_query:
     search_term = simplify(city_query)
-    # Applying simplify to the local df for filtering
-    df_temp = df.copy()
-    df_temp['s_addr'] = df_temp['Address'].apply(simplify)
-    df_temp['s_reg'] = df_temp['Region'].apply(simplify)
-    results = results[(df_temp['s_addr'].str.contains(search_term)) | (df_temp['s_reg'].str.contains(search_term))]
+    # Filter based on address or region
+    results = results[
+        results['Address'].apply(simplify).str.contains(search_term) | 
+        results['Region'].apply(simplify).str.contains(search_term)
+    ]
 
 if selected_brands:
     results = results[results['brand'].isin(selected_brands)]
@@ -90,14 +91,12 @@ if city_query or selected_brands:
     if not results.empty:
         st.success(f"Found {len(results)} stations matching your criteria")
         
-        # We REMOVED 'Name' from this list below:
         display_df = results[['brand', 'Address', 'Price']].copy()
         
         display_df['Map'] = results['Address'].apply(
             lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
         )
         
-        # Updated table with cleaner columns
         st.dataframe(
             display_df,
             column_config={
