@@ -129,17 +129,21 @@ if not df.empty:
 
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
+my_favorites = ["Esso", "Couche-Tard"]
 
+# 1. Apply "Favorites" logic
+if show_favorites:
+    results = results[results['brand'].isin(my_favorites)]
+elif selected_brands:
+    results = results[results['brand'].isin(selected_brands)]
+
+# 2. Apply City Filter
 if city_query:
     search_term = simplify(city_query)
-    # Filter based on address or region
     results = results[
         results['Address'].apply(simplify).str.contains(search_term) | 
         results['Region'].apply(simplify).str.contains(search_term)
     ]
-
-if selected_brands:
-    results = results[results['brand'].isin(selected_brands)]
 
 # --- 6. DISPLAY RESULTS ---
 if not results.empty:
@@ -151,10 +155,10 @@ if not results.empty:
     
     # Create the Map link
     display_df['Map'] = results['Address'].apply(
-        lambda x: f"http://google.com/maps/search/{urllib.parse.quote(x + ', Quebec')}"
+        lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
     )
     
-    # The Dataframe (This is where brackets usually break)
+    # The Dataframe - Carefully balanced brackets here
     st.dataframe(
         display_df,
         column_config={
