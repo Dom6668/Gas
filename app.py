@@ -55,19 +55,22 @@ brand_list = df['brand'].dropna().unique().tolist()
 all_brands = sorted([str(b) for b in brand_list])
 selected_brands = st.sidebar.multiselect("Filter by Brand", all_brands)
 
-# --- 4. FILTERING LOGIC ---
-results = df.copy()
+# --- 4. SIDEBAR SETUP ---
+st.sidebar.header("Search Filters")
 
-# Apply City Filter
-if city_query:
-    search_term = simplify(city_query)
-    df['s_addr'] = df['Address'].apply(simplify)
-    df['s_reg'] = df['Region'].apply(simplify)
-    results = results[df['s_addr'].str.contains(search_term) | df['s_reg'].str.contains(search_term)]
+# 🏙️ City Search - Set default to "Montreal"
+city_query = st.sidebar.text_input("Enter City (e.g. Montreal)", value="Montreal")
 
-# Apply Brand Filter
-if selected_brands:
-    results = results[results['brand'].isin(selected_brands)]
+# 🏷️ Brand Filter - Set defaults to "Esso" and "Couche-Tard"
+brand_list = df['brand'].dropna().unique().tolist()
+all_brands = sorted([str(b) for b in brand_list])
+
+# We use the 'default' parameter to pre-select brands
+selected_brands = st.sidebar.multiselect(
+    "Filter by Brand", 
+    options=all_brands,
+    default=["Esso", "Couche-Tard"]
+)
 
 # --- 5. DISPLAY RESULTS ---
 if city_query or selected_brands:
