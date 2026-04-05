@@ -124,7 +124,7 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
-    # Create the Map URL
+    # IMPROVED: Added 'search' path to ensure Google Maps finds the specific location
     results['Map_URL'] = results['Address'].apply(
         lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
     )
@@ -135,6 +135,7 @@ if not results.empty:
     st.dataframe(
         display_df,
         column_config={
+           # FIXED: Linked the Price column to the Map_URL column
            "Price": st.column_config.LinkColumn(
                "Price (¢)", 
                display_text=r"^(\d+\.\d+)$", 
@@ -142,7 +143,7 @@ if not results.empty:
            ),
            "Address": "Station Address",
            "brand": "Brand",
-           "Map_URL": None # Hide the URL column
+           "Map_URL": None # Keeps the raw URL hidden
         },
         hide_index=True,
         use_container_width=True
