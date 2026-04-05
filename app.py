@@ -103,22 +103,29 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
-    # Prepare Display Data
-    display_df = results[['Price', 'Address', 'brand']].copy()
+    # 1. Create the Map URL (Official Google Search API format)
+    results['Map_URL'] = results['Address'].apply(
+        lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
+    )
     
-    # Create the clickable markdown link for the Price column
-    def make_clickable_price(row):
-        addr_encoded = urllib.parse.quote(f"{row['Address']}, Quebec")
-        # Standard Google Maps Search link
-        url = f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
-        return f"[{row['Price']:.1f}¢]({url})"
-
-    display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
+    # 2. Select and order columns: Price, Address, Brand
+    # We must include Map_URL in this list so the dataframe can "see" it
+    display_df = results[['Price', 'Address', 'brand', 'Map_URL']].copy()
     
-    # Final column selection for the table
-    final_table = display_df[['Price (¢)', 'Address', 'brand']]
-    
-    # Displaying as Markdown to allow the hyperlink
-    st.markdown(final_table.to_markdown(index=False))
+    st.dataframe(
+        display_df,
+        column_config={
+           "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f"),
+           # ✅ This makes the ADDRESS the clickable part
+           "Address": st.column_config.LinkColumn(
+               "Station Address (Click to Map)", 
+               display_text=None # This ensures the actual address text is shown
+           ),
+           "brand": "Brand",
+           "Map_URL": None # This hides the raw URL column from the user
+        },
+        hide_index=True,
+        use_container_width=True
+    )
 else:
     st.warning("No stations found. Adjust your filters or toggles.")
