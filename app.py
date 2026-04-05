@@ -65,9 +65,23 @@ st.sidebar.divider()
 # ⭐ FAVORITE ADDRESSES
 st.sidebar.subheader("⭐ Favorite Stations")
 all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
+
+# 👇 Put your specific station strings here (make sure they match the app exactly)
+my_target_stations = [
+    "Esso (2495 ch. Rockland, Mont-Royal)", 
+    "Esso (180 boul. Crémazie ouest, Montréal)"
+    "Esso (790 boul. Crémazie est, Montréal)"
+    "Esso (7635 boul. Lacordaire, Montréal)"
+    "Esso (4225 rue Jarry est, Montréal)"
+]
+
+# This prevents crashes! It only uses defaults that are currently in the live data
+safe_defaults = [s for s in my_target_stations if s in all_station_addresses]
+
 my_fav_stations = st.sidebar.multiselect(
     "Select your usual stops:", 
     options=all_station_addresses,
+    default=safe_defaults,
     help="Search and select the specific addresses you visit most."
 )
 show_favs_only = st.sidebar.toggle("Show ONLY my favorite stations", value=False)
@@ -81,7 +95,6 @@ if not df.empty:
     if not mtl_stations['Price'].empty:
         mtl_avg = mtl_stations['Price'].mean()
         st.sidebar.metric("Montreal Average", f"{mtl_avg:.1f}¢")
-
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
 
