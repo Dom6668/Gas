@@ -73,13 +73,7 @@ if not df.empty:
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
 
-# 1. Apply Favorites Toggle
-if show_favorites:
-    results = results[results['brand'].isin(my_favorites)]
-elif selected_brands:
-    results = results[results['brand'].isin(selected_brands)]
-
-# 2. Apply City Filter
+# 1. Apply City Filter
 if city_query:
     search_term = simplify(city_query)
     df_temp = df.copy()
