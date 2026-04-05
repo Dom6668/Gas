@@ -122,7 +122,7 @@ if not results.empty:
         use_container_width=True
     )
 else:
-    st.warning("No stations found. Try adjusting your filters or toggling off 'Favorites Only'.")all_brands = sorted([str(b) for b in brand_list])
+    st.warning("No stations found. Try adjusting your filters or toggling off 'Favorites Only'.")
 
 # We use the 'default' parameter to pre-select brands
 selected_brands = st.sidebar.multiselect(
