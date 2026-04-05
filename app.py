@@ -184,3 +184,5 @@ if city_query or selected_brands:
             hide_index=True,
             use_container_width=True
         )
+else:
+    st.warning("No stations found. Try adjusting your filters or toggling off 'Favorites Only'.")
