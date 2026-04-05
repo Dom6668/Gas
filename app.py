@@ -26,8 +26,8 @@ def fetch_data():
     resp = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
     df = pd.DataFrame([f['properties'] for f in resp.json()['features']])
     df['Price'] = df['Prices'].apply(get_price)
-    # Unique ID for favoriting specific stations
-    df['Station_ID'] = df['brand'] + " (" + df['Address'] + ")"
+    # Create a unique label for favoriting specific addresses
+    df['Station_Address'] = df['brand'] + " (" + df['Address'] + ")"
     return df
 
 # --- 3. UI HEADER ---
@@ -62,12 +62,14 @@ selected_brands = st.sidebar.multiselect(
 
 st.sidebar.divider()
 
-# ⭐ FAVORITE STATIONS (Address-based)
-st.sidebar.subheader("⭐ My Stations")
-all_stations = sorted(df['Station_ID'].dropna().unique().tolist())
+# ⭐ FAVORITE ADDRESSES
+st.sidebar.subheader("⭐ Favorite Stations")
+# This list pulls every unique address in the dataset
+all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
 my_fav_stations = st.sidebar.multiselect(
     "Select your usual stops:", 
-    options=all_stations
+    options=all_station_addresses,
+    help="Search and select the specific addresses you visit most."
 )
 show_favs_only = st.sidebar.toggle("Show ONLY my favorite stations", value=False)
 
@@ -83,21 +85,21 @@ if not df.empty:
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
 
-# Step 1: Favorites Toggle
+# Step 1: Handle Favorites Toggle (Prioritizes specific addresses)
 if show_favs_only and my_fav_stations:
-    results = results[results['Station_ID'].isin(my_fav_stations)]
+    results = results[results['Station_Address'].isin(my_fav_stations)]
 else:
-    # Step 2: Brand Filter
+    # Step 2: Apply standard Brand Filter
     if selected_brands:
         results = results[results['brand'].isin(selected_brands)]
     
-    # Step 3: City Filter
+    # Step 3: Apply City Filter
     if city_query:
         search_term = simplify(city_query)
-        results = results[
-            results['Address'].apply(simplify).str.contains(search_term) | 
-            results['Region'].apply(simplify).str.contains(search_term)
-        ]
+        # Temporary columns for search logic
+        results['s_addr'] = results['Address'].apply(simplify)
+        results['s_reg'] = results['Region'].apply(simplify)
+        results = results[(results['s_addr'].str.contains(search_term)) | (results['s_reg'].str.contains(search_term))]
 
 # --- 6. DISPLAY RESULTS ---
 if not results.empty:
@@ -121,4 +123,4 @@ if not results.empty:
         use_container_width=True
     )
 else:
-    st.warning("No stations found. Adjust your filters or toggle off 'Favorites Only'.")
+    st.warning("No stations found. Adjust your filters or toggle off 'Favorite Stations'.")
