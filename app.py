@@ -62,21 +62,33 @@ selected_brands = st.sidebar.multiselect(
 
 st.sidebar.divider()
 
-# ⭐ FAVORITE ADDRESSES
-st.sidebar.subheader("⭐ Favorite Stations")
-all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
+# ⭐ ENHANCED FAVORITES SECTION
+st.sidebar.subheader("⭐ My Favorite Stations")
+
+# 1. Search Box to find specific addresses quickly
+fav_search = st.sidebar.text_input("🔍 Search Address to Favorite", placeholder="e.g. 123 Sherbrooke")
+
+# 2. Filter the options list based on the search box to make selection easier
+if fav_search:
+    search_term = simplify(fav_search)
+    filtered_options = [s for s in df['Station_Address'].dropna().unique() if search_term in simplify(s)]
+else:
+    filtered_options = sorted(df['Station_Address'].dropna().unique().tolist())
+
+# 3. The actual Favorite Selection
 my_fav_stations = st.sidebar.multiselect(
     "Select your usual stops:", 
-    options=all_station_addresses,
-    help="Search and select the specific addresses you visit most."
+    options=filtered_options,
+    help="Type in the search box above to find your station faster."
 )
+
+# 4. Master Toggle
 show_favs_only = st.sidebar.toggle("Show ONLY my favorite stations", value=False)
 
 # 📊 MONTREAL AVERAGE
 if not df.empty:
     st.sidebar.divider()
     mtl_search = simplify("Montreal")
-    # This calculation remains independent of current filters to provide a steady benchmark
     mtl_stations = df[df['Address'].apply(simplify).str.contains(mtl_search)]
     if not mtl_stations['Price'].empty:
         mtl_avg = mtl_stations['Price'].mean()
@@ -85,20 +97,19 @@ if not df.empty:
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
 
-# Priority 1: If Favorites Toggle is ON, only show selected addresses
+# Priority 1: Favorites Toggle
 if show_favs_only and my_fav_stations:
     results = results[results['Station_Address'].isin(my_fav_stations)]
 else:
-    # Priority 2: Apply standard Brand and City filters
+    # Priority 2: Standard Filters
     if selected_brands:
         results = results[results['brand'].isin(selected_brands)]
     
     if city_query:
-        search_term = simplify(city_query)
-        # We apply filtering directly to the results dataframe
+        term = simplify(city_query)
         results = results[
-            results['Address'].apply(simplify).str.contains(search_term) | 
-            results['Region'].apply(simplify).str.contains(search_term)
+            results['Address'].apply(simplify).str.contains(term) | 
+            results['Region'].apply(simplify).str.contains(term)
         ]
 
 # --- 6. DISPLAY RESULTS ---
