@@ -65,7 +65,6 @@ city_query = st.sidebar.text_input("Enter City", value="Montreal")
 st.sidebar.divider()
 
 # 🏷️ BRAND FILTER SECTION
-st.sidebar.subheader("🏷️ Brand Filters")
 
 # Brand Toggle - ON by default
 show_selected_brands_only = st.sidebar.toggle("Show ONLY selected brands", value=True)
@@ -80,7 +79,6 @@ selected_brands = st.sidebar.multiselect(
 st.sidebar.divider()
 
 # ⭐ FAVORITE ADDRESSES
-st.sidebar.subheader("⭐ Favorite Stations")
 all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
 
 # SET YOUR DEFAULT STATIONS HERE
