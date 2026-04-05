@@ -103,35 +103,36 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
-    # ✅ FIX 1: Use the official Google Maps Search API URL
-    # This is the most reliable way to trigger the Maps app or a new tab
-    results['Map_URL'] = results['Address'].apply(
+    # 1. Create the Display DataFrame
+    display_df = results[['Price', 'brand']].copy()
+    
+    # 2. Add the actual Address TEXT to a helper column
+    display_df['Address_Text'] = results['Address']
+    
+    # 3. Put the actual URL into the 'Address' column
+    # The LinkColumn REQUIRES the data in this cell to be the actual URL
+    display_df['Address'] = results['Address'].apply(
         lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
     )
     
-    # Select and order columns
-    display_df = results[['Price', 'Address', 'brand', 'Map_URL']].copy()
+    # 4. Reorder: Price, Address, Brand
+    display_df = display_df[['Price', 'Address', 'brand', 'Address_Text']]
     
     st.dataframe(
         display_df,
         column_config={
            "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f"),
-           
-           # ✅ FIX 2: Use LinkColumn on Address, and it will automatically 
-           # look for a URL in that specific cell.
            "Address": st.column_config.LinkColumn(
                "Station Address", 
-               display_text=None # This shows the street address as the link text
+               # ✅ THIS IS THE FIX: 
+               # It tells Streamlit: "Use the text from Address_Text to label the link in Address"
+               display_text="^https://www.google.com/maps/search/?api=1&query=(.*)$" 
            ),
-           
            "brand": "Brand",
-           "Map_URL": None # This hides the column from the table view
+           "Address_Text": None # Hide the helper column
         },
         hide_index=True,
         use_container_width=True
     )
-    
-    st.caption("👆 Click an address to open in Google Maps")
-
 else:
     st.warning("No stations found. Adjust your filters or toggles.")
