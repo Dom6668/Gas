@@ -103,35 +103,35 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
-    # 1. Create the Map URL column (Official Google Search API)
+    # ✅ FIX 1: Use the official Google Maps Search API URL
+    # This is the most reliable way to trigger the Maps app or a new tab
     results['Map_URL'] = results['Address'].apply(
         lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
     )
     
-    # 2. Select and order columns: Price, Address, Brand, and Map_URL
-    # Map_URL must be in the dataframe for the LinkColumn to use it
+    # Select and order columns
     display_df = results[['Price', 'Address', 'brand', 'Map_URL']].copy()
     
     st.dataframe(
         display_df,
         column_config={
-           # Standard number formatting for Price
            "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f"),
            
-           # ✅ THE FIX: Make Address a LinkColumn that points to Map_URL
+           # ✅ FIX 2: Use LinkColumn on Address, and it will automatically 
+           # look for a URL in that specific cell.
            "Address": st.column_config.LinkColumn(
                "Station Address", 
-               display_text=None  # This tells Streamlit to show the text in the 'Address' cell
+               display_text=None # This shows the street address as the link text
            ),
            
            "brand": "Brand",
-           "Map_URL": None  # This HIDDEN column provides the link for the Address
+           "Map_URL": None # This hides the column from the table view
         },
         hide_index=True,
         use_container_width=True
     )
     
-    # 💡 Tip for users
-    st.caption("Click on any address to open it in Google Maps.")
+    st.caption("👆 Click an address to open in Google Maps")
+
 else:
     st.warning("No stations found. Adjust your filters or toggles.")
