@@ -30,21 +30,31 @@ def fetch_data():
     df['Station_Address'] = df['brand'] + " (" + df['Address'] + ")"
     return df
 
+# Load Data Early to use in Header
+df = fetch_data()
+
 # --- 3. UI HEADER ---
-col_title, col_btn = st.columns([5, 2])
+col_title, col_metric = st.columns([5, 2])
+
 with col_title:
     st.markdown("## ⛽ Live Gas Prices")
-with col_btn:
-    st.write(" ") 
-    if st.button("🔄 Refresh"):
+    st.markdown("Find the cheapest gas near you. Data updates every 5 minutes.")
+
+with col_metric:
+    # 🔄 Refresh Button
+    if st.button("🔄 Refresh", use_container_width=True):
         fetch_data.clear()
         st.rerun()
+    
+    # 📊 Montreal Average directly below the button
+    if not df.empty:
+        mtl_search = simplify("Montreal")
+        mtl_stations = df[df['Address'].apply(simplify).str.contains(mtl_search)]
+        if not mtl_stations['Price'].empty:
+            mtl_avg = mtl_stations['Price'].mean()
+            st.metric("MTL Average", f"{mtl_avg:.1f}¢")
 
-st.markdown("Find the cheapest gas near you. Data updates every 5 minutes.")
 st.divider()
-
-# Load Data
-df = fetch_data()
 
 # --- 4. SIDEBAR SETUP ---
 st.sidebar.header("Search Filters")
@@ -91,15 +101,6 @@ my_fav_stations = st.sidebar.multiselect(
 
 # Set the favorites toggle to be ON by default
 show_favs_only = st.sidebar.toggle("Show ONLY my favorite stations", value=True)
-
-# 📊 MONTREAL AVERAGE
-if not df.empty:
-    st.sidebar.divider()
-    mtl_search = simplify("Montreal")
-    mtl_stations = df[df['Address'].apply(simplify).str.contains(mtl_search)]
-    if not mtl_stations['Price'].empty:
-        mtl_avg = mtl_stations['Price'].mean()
-        st.sidebar.metric("Montreal Average", f"{mtl_avg:.1f}¢")
 
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
