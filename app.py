@@ -61,11 +61,6 @@ selected_brands = st.sidebar.multiselect(
     default=["Esso", "Couche-Tard"]
 )
 
-# ⭐ Favorites Toggle
-st.sidebar.divider()
-show_favorites = st.sidebar.checkbox("Show Only My Favorites", value=True)
-my_favorites = ["Esso", "Couche-Tard"]
-
 # 📊 Montreal Average Metric
 if not df.empty:
     st.sidebar.divider()
