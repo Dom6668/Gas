@@ -63,6 +63,63 @@ selected_brands = st.sidebar.multiselect(
 
 # ⭐ Favorites Toggle
 st.sidebar.divider()
+show_favorites = st.sidebar.checkbox("⭐ Show Only My Favorites", value=True)
+my_favorites = ["Esso", "Couche-Tard"]
+
+# 📊 Montreal Average Metric
+if not df.empty:
+    st.sidebar.divider()
+    # We use the full 'df' here so the average is always accurate regardless of filters
+    mtl_search = simplify("Montreal")
+    mtl_stations = df[df['Address'].apply(simplify).str.contains(mtl_search)]
+    
+    if not mtl_stations['Price'].empty:
+        mtl_avg = mtl_stations['Price'].mean()
+        st.sidebar.metric("Montreal Average", f"{mtl_avg:.1f}¢")
+
+# --- 5. FILTERING LOGIC ---
+results = df.copy()
+
+# 1. Apply Brand Filtering (Favorites vs Manual)
+if show_favorites:
+    results = results[results['brand'].isin(my_favorites)]
+elif selected_brands:
+    results = results[results['brand'].isin(selected_brands)]
+
+# 2. Apply City Filter
+if city_query:
+    search_term = simplify(city_query)
+    # Create temp columns for searching without affecting the display table
+    results['s_addr'] = results['Address'].apply(simplify)
+    results['s_reg'] = results['Region'].apply(simplify)
+    
+    results = results[(results['s_addr'].str.contains(search_term)) | (results['s_reg'].str.contains(search_term))]
+
+# --- 6. DISPLAY RESULTS ---
+if not results.empty:
+    results = results.sort_values(by='Price')
+    st.success(f"Found {len(results)} stations matching your criteria")
+    
+    display_df = results[['brand', 'Address', 'Price']].copy()
+    display_df['Map'] = results['Address'].apply(
+        lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
+    )
+    
+    st.dataframe(
+        display_df,
+        column_config={
+           "brand": "Brand",
+           "Address": "Station Address",
+           "Map": st.column_config.LinkColumn("View on Map", display_text="Click to View"),
+           "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f")
+        },
+        hide_index=True,
+        use_container_width=True
+    )
+else:
+    st.error("No stations found. Try unchecking 'Favorites' or changing the city.")
+# ⭐ Favorites Toggle
+st.sidebar.divider()
 show_favorites = st.sidebar.checkbox("Show Only My Favorites", value=True)
 my_favorites = ["Esso", "Couche-Tard"]
 
