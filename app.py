@@ -68,10 +68,10 @@ all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
 
 # 👇 Put your specific station strings here (make sure they match the app exactly)
 my_target_stations = [
-    "Esso (2495 ch. Rockland, Mont-Royal)", 
-    "Esso (180 boul. Crémazie ouest, Montréal)"
-    "Esso (790 boul. Crémazie est, Montréal)"
-    "Esso (7635 boul. Lacordaire, Montréal)"
+    "Esso (2495 ch. Rockland, Mont-Royal)",
+    "Esso (180 boul. Crémazie ouest, Montréal)",
+    "Esso (790 boul. Crémazie est, Montréal)",
+    "Esso (7635 boul. Lacordaire, Montréal)",
     "Esso (4225 rue Jarry est, Montréal)"
 ]
 
