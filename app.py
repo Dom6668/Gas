@@ -84,7 +84,7 @@ my_fav_stations = st.sidebar.multiselect(
     default=safe_defaults,
     help="Search and select the specific addresses you visit most."
 )
-show_favs_only = st.sidebar.toggle("Show ONLY my favorite stations", value=False)
+show_favs_only = st.sidebar.toggle("Show ONLY my favorite stations", value=True)
 
 # 📊 MONTREAL AVERAGE
 if not df.empty:
