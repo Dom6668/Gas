@@ -26,6 +26,8 @@ def fetch_data():
     resp = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
     df = pd.DataFrame([f['properties'] for f in resp.json()['features']])
     df['Price'] = df['Prices'].apply(get_price)
+    # Create a clean combined label for the favorites selector
+    df['Station_Label'] = df['brand'] + " - " + df['Address']
     return df
 
 # --- 3. UI HEADER ---
@@ -50,17 +52,77 @@ st.sidebar.header("Search Filters")
 # 🏙️ City Search
 city_query = st.sidebar.text_input("Enter City", value="Montreal")
 
-# 🏷️ Brand Setup
-brand_list = df['brand'].dropna().unique().tolist()
-all_brands = sorted([str(b) for b in brand_list])
+# 🏷️ Brand Filter (Back in the main search section)
+brand_list = sorted(df['brand'].dropna().unique().tolist())
+selected_brands = st.sidebar.multiselect(
+    "Filter by Brand", 
+    options=brand_list,
+    default=["Esso", "Couche-Tard"]
+)
 
 st.sidebar.divider()
 
-# ⭐ FAVORITES SECTION (Your Preset)
-st.sidebar.subheader("⭐ Favorites Preset")
-my_fav_list = st.sidebar.multiselect(
-    "Define your Favorite Brands", 
-    options=all_brands,
+# ⭐ FAVORITE ADDRESSES SECTION
+st.sidebar.subheader("⭐ Favorite Stations")
+# This list pulls every unique address in the dataset
+all_stations = sorted(df['Station_Label'].dropna().unique().tolist())
+my_fav_stations = st.sidebar.multiselect(
+    "Select your usual stops:", 
+    options=all_stations,
+    help="Search and select the specific addresses you visit most."
+)
+show_favs_only = st.sidebar.toggle("Show ONLY my favorite stations", value=False)
+
+# 📊 MONTREAL AVERAGE
+if not df.empty:
+    st.sidebar.divider()
+    mtl_search = simplify("Montreal")
+    mtl_stations = df[df['Address'].apply(simplify).str.contains(mtl_search)]
+    if not mtl_stations['Price'].empty:
+        mtl_avg = mtl_stations['Price'].mean()
+        st.sidebar.metric("Montreal Average", f"{mtl_avg:.1f}¢")
+
+# --- 5. FILTERING LOGIC ---
+results = df.copy()
+
+# Step 1: Handle Favorites Toggle
+if show_favs_only and my_fav_stations:
+    results = results[results['Station_Label'].isin(my_fav_stations)]
+else:
+    # Step 2: Apply standard Brand Filter if toggle is off
+    if selected_brands:
+        results = results[results['brand'].isin(selected_brands)]
+    
+    # Step 3: Apply City Filter
+    if city_query:
+        search_term = simplify(city_query)
+        results['s_addr'] = results['Address'].apply(simplify)
+        results['s_reg'] = results['Region'].apply(simplify)
+        results = results[(results['s_addr'].str.contains(search_term)) | (results['s_reg'].str.contains(search_term))]
+
+# --- 6. DISPLAY RESULTS ---
+if not results.empty:
+    results = results.sort_values(by='Price')
+    st.success(f"Found {len(results)} stations")
+    
+    display_df = results[['brand', 'Address', 'Price']].copy()
+    display_df['Map'] = results['Address'].apply(
+        lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
+    )
+    
+    st.dataframe(
+        display_df,
+        column_config={
+           "brand": "Brand",
+           "Address": "Station Address",
+           "Map": st.column_config.LinkColumn("View on Map", display_text="Click to View"),
+           "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f")
+        },
+        hide_index=True,
+        use_container_width=True
+    )
+else:
+    st.warning("No stations found. Adjust your filters or toggle off 'Favorites Only'.")    options=all_brands,
     default=["Esso", "Couche-Tard"]
 )
 use_favs = st.sidebar.toggle("Filter by Favorites Only", value=True)
