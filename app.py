@@ -66,26 +66,20 @@ st.sidebar.divider()
 st.sidebar.subheader("⭐ Favorite Stations")
 all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
 
-# 👇 STEP 1: ADD YOUR DEFAULT STATIONS HERE
-# Copy the exact names from the app's dropdown to have them pre-selected
+# SET YOUR DEFAULT STATIONS HERE
 my_target_stations = [
-    "Esso (2495 ch. Rockland, Mont-Royal)",
-    "Esso (180 boul. Crémazie ouest, Montréal)",
-    "Esso (790 boul. Crémazie est, Montréal)",
-    "Esso (7635 boul. Lacordaire, Montréal)",
-    "Esso (4225 rue Jarry est, Montréal)"
+    "Costco (300 Rue Bridge)", 
+    "Esso (123 Rue Sherbrooke)"
 ]
 safe_defaults = [s for s in my_target_stations if s in all_station_addresses]
 
 my_fav_stations = st.sidebar.multiselect(
     "Select your usual stops:", 
     options=all_station_addresses,
-    default=safe_defaults,
-    help="Search and select the specific addresses you visit most."
+    default=safe_defaults
 )
 
-# 👇 STEP 2: TOGGLE STARTUP STATE
-# Set value=True to have this enabled the moment you open the app
+# Set the toggle to be ON by default as requested
 show_favs_only = st.sidebar.toggle("Show ONLY my favorite stations", value=True)
 
 # 📊 MONTREAL AVERAGE
@@ -118,21 +112,26 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
-    # 👇 STEP 3: REORDER COLUMNS
-    # We define the order here: Price first, then Address, then Brand
-    display_df = results[['Price', 'Address', 'brand']].copy()
-    
-    display_df['Map'] = results['Address'].apply(
+    # We create a column for the URL but we will hide it from view
+    results['Map_URL'] = results['Address'].apply(
         lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
     )
+    
+    # Select only the columns you want to see, in your preferred order
+    display_df = results[['Price', 'Address', 'brand', 'Map_URL']].copy()
     
     st.dataframe(
         display_df,
         column_config={
-           "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f"),
+           # This makes the Price column a clickable link using the Map_URL data
+           "Price": st.column_config.LinkColumn(
+               "Price (¢)", 
+               display_text=r"^(\d+\.\d+)$", # Uses a regex to keep the number visible
+               validate=None
+           ),
            "Address": "Station Address",
            "brand": "Brand",
-           "Map": st.column_config.LinkColumn("View on Map", display_text="Click to View")
+           "Map_URL": None # This hides the URL column from the user
         },
         hide_index=True,
         use_container_width=True
