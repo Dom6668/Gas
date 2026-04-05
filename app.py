@@ -52,9 +52,6 @@ with col_metric:
             # This remains next to the title
             st.metric("MTL Average", f"{mtl_avg:.1f}¢")
 
-# Subtitle remains below the header row
-st.markdown("Find the cheapest gas near you. Data updates every 5 minutes.")
-
 # Tighten the spacing to the divider
 st.markdown('<div style="margin-top: -25px;"></div>', unsafe_allow_html=True)
 st.divider()
