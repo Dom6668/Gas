@@ -68,6 +68,8 @@ selected_brands = st.sidebar.multiselect(
     options=all_brands,
     default=["Esso", "Couche-Tard"]
 
+)
+
 # 📊 Montreal Average Metric
 if not df.empty:
     st.sidebar.divider()
