@@ -103,39 +103,22 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
-    # 1. Create the official Google Maps link
-    # We use a helper column that we will later hide
-    results['Map_URL'] = results['Address'].apply(
-        lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
-    )
+    # Prepare Display Data
+    display_df = results[['Price', 'Address', 'brand']].copy()
     
-    # 2. Select the columns in your preferred order
-    # Note: Address and Map_URL must both be here for the mapping to work
-    display_df = results[['Price', 'Address', 'brand', 'Map_URL']].copy()
+    # Create the clickable markdown link for the Price column
+    def make_clickable_price(row):
+        addr_encoded = urllib.parse.quote(f"{row['Address']}, Quebec")
+        # Standard Google Maps Search link
+        url = f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
+        return f"[{row['Price']:.1f}¢]({url})"
+
+    display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
     
-    st.dataframe(
-        display_df,
-        column_config={
-           # Format the price as a simple number again (not a link)
-           "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f"),
-           
-           # ✅ THE FIX:
-           # We tell the LinkColumn to use 'Map_URL' for the destination 
-           # but use the 'Address' text for the display.
-           "Address": st.column_config.LinkColumn(
-               "Station Address",
-               help="Click to open in Google Maps",
-               # This refers to the data ALREADY in the Address column
-               display_text=None 
-           ),
-           
-           "brand": "Brand",
-           
-           # ✅ Hide the messy URL column from the user
-           "Map_URL": None 
-        },
-        hide_index=True,
-        use_container_width=True
-    )
+    # Final column selection for the table
+    final_table = display_df[['Price (¢)', 'Address', 'brand']]
+    
+    # Displaying as Markdown to allow the hyperlink
+    st.markdown(final_table.to_markdown(index=False))
 else:
     st.warning("No stations found. Adjust your filters or toggles.")
