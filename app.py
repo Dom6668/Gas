@@ -5,7 +5,7 @@ import unicodedata
 import urllib.parse
 
 # --- 1. APP CONFIG ---
-st.set_page_config(page_title="Quebec Gas Tracker", page_icon="⛽")
+st.set_page_config(page_title="Gas Tracker", page_icon="⛽")
 
 # --- 2. THE LOGIC ---
 def simplify(text):
@@ -38,7 +38,6 @@ col_title, col_metric = st.columns([5, 2])
 
 with col_title:
     st.markdown("## ⛽ Live Gas Prices")
-    st.markdown("Find the cheapest gas near you. Data updates every 5 minutes.")
 
 with col_metric:
     # 🔄 Refresh Button
