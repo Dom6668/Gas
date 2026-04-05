@@ -29,15 +29,12 @@ def fetch_data():
     return df
 
 # --- 3. THE USER INTERFACE (Header & Refresh) ---
-# We use a 2-column layout to force them onto the same line
 col_title, col_btn = st.columns([5, 2])
 
 with col_title:
-    # Using a markdown header instead of st.title to keep the line height slim
     st.markdown("## ⛽ Live Gas Prices")
 
 with col_btn:
-    # A tiny bit of top padding to center the button vertically with the text
     st.write(" ") 
     if st.button("🔄 Refresh"):
         fetch_data.clear()
@@ -49,70 +46,73 @@ st.divider()
 # Load Data
 df = fetch_data()
 
-# Load Data
-df = fetch_data()
-
 # --- 4. SIDEBAR SETUP ---
 st.sidebar.header("Search Filters")
 
-# 🏙️ City Search - Set default to "Montreal"
+# 🏙️ City Search
 city_query = st.sidebar.text_input("Enter City (e.g. Montreal)", value="Montreal")
 
-# 🏷️ Brand Filter - Set defaults to "Esso" and "Couche-Tard"
+# 🏷️ Brand Filter
 brand_list = df['brand'].dropna().unique().tolist()
 all_brands = sorted([str(b) for b in brand_list])
-
-# We use the 'default' parameter to pre-select brands
 selected_brands = st.sidebar.multiselect(
     "Filter by Brand", 
     options=all_brands,
     default=["Esso", "Couche-Tard"]
 )
 
+# ⭐ Favorites Toggle
+st.sidebar.divider()
+show_favorites = st.sidebar.checkbox("Show Only My Favorites", value=True)
+my_favorites = ["Esso", "Couche-Tard"]
+
+# 📊 Montreal Average Metric
+if not df.empty:
+    st.sidebar.divider()
+    # Logic to find Montreal stations for the benchmark
+    mtl_data = df[df['Address'].apply(simplify).str.contains("montreal")]
+    if not mtl_data['Price'].empty:
+        mtl_avg = mtl_data['Price'].mean()
+        st.sidebar.metric("Montreal Average", f"{mtl_avg:.1f}¢")
+
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
 
+# 1. Apply Favorites Toggle
+if show_favorites:
+    results = results[results['brand'].isin(my_favorites)]
+elif selected_brands:
+    results = results[results['brand'].isin(selected_brands)]
+
+# 2. Apply City Filter
 if city_query:
     search_term = simplify(city_query)
-    # Applying simplify to the local df for filtering
     df_temp = df.copy()
     df_temp['s_addr'] = df_temp['Address'].apply(simplify)
     df_temp['s_reg'] = df_temp['Region'].apply(simplify)
+    # Ensure this bracket is closed correctly
     results = results[(df_temp['s_addr'].str.contains(search_term)) | (df_temp['s_reg'].str.contains(search_term))]
 
-if selected_brands:
-    results = results[results['brand'].isin(selected_brands)]
-
 # --- 6. DISPLAY RESULTS ---
-if city_query or selected_brands:
+if not results.empty:
     results = results.sort_values(by='Price')
-
-    if not results.empty:
-        st.success(f"Found {len(results)} stations matching your criteria")
-        
-        # We REMOVED 'Name' from this list below:
-        display_df = results[['brand', 'Address', 'Price']].copy()
-        
-        display_df['Map'] = results['Address'].apply(
-            lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
-        )
-        
-        # Updated table with cleaner columns
-        st.dataframe(
-            display_df,
-            column_config={
-               "brand": "Brand",
-               "Address": "Station Address",
-               "Map": st.column_config.LinkColumn(
-                    "View on Map", 
-                    display_text="Click to View on Map"
-                ),
-                "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f")
-            },
-            hide_index=True,
-            use_container_width=True
-        )
-    else:
-        st.error("No stations found. Try broadening your search!")
+    st.success(f"Found {len(results)} stations matching your criteria")
+    
+    display_df = results[['brand', 'Address', 'Price']].copy()
+    display_df['Map'] = results['Address'].apply(
+        lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
+    )
+    
+    st.dataframe(
+        display_df,
+        column_config={
+           "brand": "Brand",
+           "Address": "Station Address",
+           "Map": st.column_config.LinkColumn("View on Map", display_text="Click to View"),
+           "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f")
+        },
+        hide_index=True,
+        use_container_width=True
+    )
 else:
-    st.info("👈 Search by City or Brand in the sidebar to begin.")
+    st.error("No stations found. Try broadening your search!")
