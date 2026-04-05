@@ -46,7 +46,6 @@ with col_metric:
             mtl_avg = mtl_stations['Price'].mean()
             st.metric("MTL Average", f"{mtl_avg:.1f}¢")
 
-st.markdown("Find the cheapest gas near you. Data updates every 5 minutes.")
 st.markdown('<div style="margin-top: -25px;"></div>', unsafe_allow_html=True)
 st.divider()
 
@@ -55,7 +54,6 @@ st.sidebar.header("Search Filters")
 city_query = st.sidebar.text_input("Enter City", value="Montreal")
 
 st.sidebar.divider()
-st.sidebar.subheader("🏷️ Brand Filters")
 show_selected_brands_only = st.sidebar.toggle("Show ONLY selected brands", value=True)
 brand_list = sorted(df['brand'].dropna().unique().tolist())
 selected_brands = st.sidebar.multiselect(
@@ -65,7 +63,6 @@ selected_brands = st.sidebar.multiselect(
 )
 
 st.sidebar.divider()
-st.sidebar.subheader("⭐ Favorite Stations")
 all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
 
 # --- USER CUSTOMIZATION ---
