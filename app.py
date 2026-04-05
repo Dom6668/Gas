@@ -66,16 +66,12 @@ st.sidebar.divider()
 st.sidebar.subheader("⭐ Favorite Stations")
 all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
 
-# 👇 Put your specific station strings here (make sure they match the app exactly)
+# 👇 STEP 1: ADD YOUR DEFAULT STATIONS HERE
+# Copy the exact names from the app's dropdown to have them pre-selected
 my_target_stations = [
-    "Esso (2495 ch. Rockland, Mont-Royal)",
-    "Esso (180 boul. Crémazie ouest, Montréal)",
-    "Esso (790 boul. Crémazie est, Montréal)",
-    "Esso (7635 boul. Lacordaire, Montréal)",
-    "Esso (4225 rue Jarry est, Montréal)"
+    "Costco (300 Rue Bridge)", 
+    "Esso (123 Rue Sherbrooke)"
 ]
-
-# This prevents crashes! It only uses defaults that are currently in the live data
 safe_defaults = [s for s in my_target_stations if s in all_station_addresses]
 
 my_fav_stations = st.sidebar.multiselect(
@@ -84,31 +80,31 @@ my_fav_stations = st.sidebar.multiselect(
     default=safe_defaults,
     help="Search and select the specific addresses you visit most."
 )
+
+# 👇 STEP 2: TOGGLE STARTUP STATE
+# Set value=True to have this enabled the moment you open the app
 show_favs_only = st.sidebar.toggle("Show ONLY my favorite stations", value=True)
 
 # 📊 MONTREAL AVERAGE
 if not df.empty:
     st.sidebar.divider()
     mtl_search = simplify("Montreal")
-    # This calculation remains independent of current filters to provide a steady benchmark
     mtl_stations = df[df['Address'].apply(simplify).str.contains(mtl_search)]
     if not mtl_stations['Price'].empty:
         mtl_avg = mtl_stations['Price'].mean()
         st.sidebar.metric("Montreal Average", f"{mtl_avg:.1f}¢")
+
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
 
-# Priority 1: If Favorites Toggle is ON, only show selected addresses
 if show_favs_only and my_fav_stations:
     results = results[results['Station_Address'].isin(my_fav_stations)]
 else:
-    # Priority 2: Apply standard Brand and City filters
     if selected_brands:
         results = results[results['brand'].isin(selected_brands)]
     
     if city_query:
         search_term = simplify(city_query)
-        # We apply filtering directly to the results dataframe
         results = results[
             results['Address'].apply(simplify).str.contains(search_term) | 
             results['Region'].apply(simplify).str.contains(search_term)
@@ -119,7 +115,10 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
-    display_df = results[['brand', 'Address', 'Price']].copy()
+    # 👇 STEP 3: REORDER COLUMNS
+    # We define the order here: Price first, then Address, then Brand
+    display_df = results[['Price', 'Address', 'brand']].copy()
+    
     display_df['Map'] = results['Address'].apply(
         lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
     )
@@ -127,10 +126,10 @@ if not results.empty:
     st.dataframe(
         display_df,
         column_config={
-           "brand": "Brand",
+           "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f"),
            "Address": "Station Address",
-           "Map": st.column_config.LinkColumn("View on Map", display_text="Click to View"),
-           "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f")
+           "brand": "Brand",
+           "Map": st.column_config.LinkColumn("View on Map", display_text="Click to View")
         },
         hide_index=True,
         use_container_width=True
