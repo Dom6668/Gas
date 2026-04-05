@@ -26,7 +26,7 @@ def fetch_data():
     resp = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
     df = pd.DataFrame([f['properties'] for f in resp.json()['features']])
     df['Price'] = df['Prices'].apply(get_price)
-    # Create a clean combined label for the favorites selector
+    # Create a clean label for the favorites selector
     df['Station_Label'] = df['brand'] + " - " + df['Address']
     return df
 
@@ -52,7 +52,7 @@ st.sidebar.header("Search Filters")
 # 🏙️ City Search
 city_query = st.sidebar.text_input("Enter City", value="Montreal")
 
-# 🏷️ Brand Filter (Back in the main search section)
+# 🏷️ Brand Filter
 brand_list = sorted(df['brand'].dropna().unique().tolist())
 selected_brands = st.sidebar.multiselect(
     "Filter by Brand", 
@@ -61,6 +61,22 @@ selected_brands = st.sidebar.multiselect(
 )
 
 st.sidebar.divider()
+
+# ⭐ FAVORITE STATIONS (Address-based)
+st.sidebar.subheader("⭐ Favorite Stations")
+all_stations = sorted(df['Station_Label'].dropna().unique().tolist())
+my_fav_stations = st.sidebar.multiselect(
+    "Select your usual stops:", 
+    options=all_stations
+)
+show_favs_only = st.sidebar.toggle("Show ONLY my favorite stations", value=False)
+
+# 📊 MONTREAL AVERAGE
+if not df.empty:
+    st.sidebar.divider()
+    mtl_search = simplify("Montreal")
+    mtl_stations = df[df['Address'].apply(simplify).str.contains(mtl_search)]
+    ifst.sidebar.divider()
 
 # ⭐ FAVORITE ADDRESSES SECTION
 st.sidebar.subheader("⭐ Favorite Stations")
