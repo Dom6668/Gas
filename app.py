@@ -34,25 +34,35 @@ def fetch_data():
 df = fetch_data()
 
 # --- 3. UI HEADER ---
-col_title, col_metric = st.columns([5, 2])
+# We load the data early so the average is available for the header
+df = fetch_data()
+
+# Create three columns: Title (left), Average (center), Refresh (right)
+col_title, col_metric, col_btn = st.columns([4, 2, 2])
 
 with col_title:
     st.markdown("## ⛽ Live Gas Prices")
 
 with col_metric:
-    # 🔄 Refresh Button
-    if st.button("🔄 Refresh", use_container_width=True):
-        fetch_data.clear()
-        st.rerun()
-    
-    # 📊 Montreal Average directly below the button
     if not df.empty:
         mtl_search = simplify("Montreal")
         mtl_stations = df[df['Address'].apply(simplify).str.contains(mtl_search)]
         if not mtl_stations['Price'].empty:
             mtl_avg = mtl_stations['Price'].mean()
+            # This puts the metric right next to the title
             st.metric("MTL Average", f"{mtl_avg:.1f}¢")
 
+with col_btn:
+    # use_container_width makes the button fill its column for a cleaner look
+    if st.button("🔄 Refresh", use_container_width=True):
+        fetch_data.clear()
+        st.rerun()
+
+# Subtitle placed below the main header line
+st.markdown("Find the cheapest gas near you. Data updates every 5 minutes.")
+
+# Adjust spacing: -25px moves the line UP toward the price
+st.markdown('<div style="margin-top: -25px;"></div>', unsafe_allow_html=True)
 st.divider()
 
 # --- 4. SIDEBAR SETUP ---
