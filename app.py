@@ -124,29 +124,25 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
-    # ✅ FIX: Use the standard Google Maps search URL (works better with LinkColumn)
-    results['Map_URL'] = results['Address'].apply(
-        lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
-    )
+    # 1. Prepare the display data
+    display_df = results[['Price', 'Address', 'brand']].copy()
     
-    # Select and order columns
-    display_df = results[['Price', 'Address', 'brand', 'Map_URL']].copy()
+    # 2. Create the Google Maps Search URL
+    # We use the official search API which is very reliable on mobile
+    def make_google_link(row):
+        address_encoded = urllib.parse.quote(f"{row['Address']}, Quebec")
+        url = f"https://www.google.com/maps/search/?api=1&query={address_encoded}"
+        # We wrap the Price in a Markdown link format: [Text](URL)
+        return f"[{row['Price']:.1f}¢]({url})"
+
+    # 3. Apply the link to the Price column
+    display_df['Price (¢)'] = display_df.apply(make_google_link, axis=1)
     
-    st.dataframe(
-        display_df,
-        column_config={
-           # This maps the 'Price' display to the hidden 'Map_URL' data
-           "Price": st.column_config.LinkColumn(
-               "Price (¢)", 
-               display_text=r"^(\d+\.\d+)$", # Keeps the price number visible
-               validate=None
-           ),
-           "Address": "Station Address",
-           "brand": "Brand",
-           "Map_URL": None # This HIDDEN column provides the link for the Price column
-        },
-        hide_index=True,
-        use_container_width=True
-    )
+    # 4. Clean up columns for display
+    display_df = display_df[['Price (¢)', 'Address', 'brand']]
+    
+    # 5. Display as a Markdown Table (This makes the links work perfectly)
+    st.markdown(display_df.to_markdown(index=False))
+    
 else:
     st.warning("No stations found. Adjust your filters or toggles.")
