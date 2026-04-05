@@ -26,7 +26,7 @@ def fetch_data():
     resp = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
     df = pd.DataFrame([f['properties'] for f in resp.json()['features']])
     df['Price'] = df['Prices'].apply(get_price)
-    # Combined label for the address-based favorites selector
+    # Create a unique label for favoriting specific addresses
     df['Station_Address'] = df['brand'] + " (" + df['Address'] + ")"
     return df
 
@@ -62,27 +62,15 @@ selected_brands = st.sidebar.multiselect(
 
 st.sidebar.divider()
 
-# ⭐ ENHANCED FAVORITES SECTION
-st.sidebar.subheader("⭐ My Favorite Stations")
-
-# 1. Search Box to find specific addresses quickly
-fav_search = st.sidebar.text_input("🔍 Search Address to Favorite", placeholder="e.g. 123 Sherbrooke")
-
-# 2. Filter the options list based on the search box to make selection easier
-if fav_search:
-    search_term = simplify(fav_search)
-    filtered_options = [s for s in df['Station_Address'].dropna().unique() if search_term in simplify(s)]
-else:
-    filtered_options = sorted(df['Station_Address'].dropna().unique().tolist())
-
-# 3. The actual Favorite Selection
+# ⭐ FAVORITE ADDRESSES
+st.sidebar.subheader("⭐ Favorite Stations")
+# This list pulls every unique address in the dataset
+all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
 my_fav_stations = st.sidebar.multiselect(
     "Select your usual stops:", 
-    options=filtered_options,
-    help="Type in the search box above to find your station faster."
+    options=all_station_addresses,
+    help="Search and select the specific addresses you visit most."
 )
-
-# 4. Master Toggle
 show_favs_only = st.sidebar.toggle("Show ONLY my favorite stations", value=False)
 
 # 📊 MONTREAL AVERAGE
@@ -97,20 +85,21 @@ if not df.empty:
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
 
-# Priority 1: Favorites Toggle
+# Step 1: Handle Favorites Toggle (Prioritizes specific addresses)
 if show_favs_only and my_fav_stations:
     results = results[results['Station_Address'].isin(my_fav_stations)]
 else:
-    # Priority 2: Standard Filters
+    # Step 2: Apply standard Brand Filter
     if selected_brands:
         results = results[results['brand'].isin(selected_brands)]
     
+    # Step 3: Apply City Filter
     if city_query:
-        term = simplify(city_query)
-        results = results[
-            results['Address'].apply(simplify).str.contains(term) | 
-            results['Region'].apply(simplify).str.contains(term)
-        ]
+        search_term = simplify(city_query)
+        # Temporary columns for search logic
+        results['s_addr'] = results['Address'].apply(simplify)
+        results['s_reg'] = results['Region'].apply(simplify)
+        results = results[(results['s_addr'].str.contains(search_term)) | (results['s_reg'].str.contains(search_term))]
 
 # --- 6. DISPLAY RESULTS ---
 if not results.empty:
@@ -129,9 +118,3 @@ if not results.empty:
            "Address": "Station Address",
            "Map": st.column_config.LinkColumn("View on Map", display_text="Click to View"),
            "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f")
-        },
-        hide_index=True,
-        use_container_width=True
-    )
-else:
-    st.warning("No stations found. Adjust your filters or toggle off 'Favorite Stations'.")
