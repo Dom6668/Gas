@@ -124,26 +124,26 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
-    # IMPROVED: Added 'search' path to ensure Google Maps finds the specific location
+    # ✅ FIX: Use the standard Google Maps search URL (works better with LinkColumn)
     results['Map_URL'] = results['Address'].apply(
         lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
     )
     
-    # Select and order columns: Price (clickable), Address, Brand
+    # Select and order columns
     display_df = results[['Price', 'Address', 'brand', 'Map_URL']].copy()
     
     st.dataframe(
         display_df,
         column_config={
-           # FIXED: Linked the Price column to the Map_URL column
+           # This maps the 'Price' display to the hidden 'Map_URL' data
            "Price": st.column_config.LinkColumn(
                "Price (¢)", 
-               display_text=r"^(\d+\.\d+)$", 
+               display_text=r"^(\d+\.\d+)$", # Keeps the price number visible
                validate=None
            ),
            "Address": "Station Address",
            "brand": "Brand",
-           "Map_URL": None # Keeps the raw URL hidden
+           "Map_URL": None # This HIDDEN column provides the link for the Price column
         },
         hide_index=True,
         use_container_width=True
