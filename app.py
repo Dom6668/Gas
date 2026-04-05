@@ -28,7 +28,7 @@ def fetch_data():
     df['Price'] = df['Prices'].apply(get_price)
     return df
 
-# --- 3. THE USER INTERFACE (Header & Refresh) ---
+# --- 3. UI HEADER ---
 col_title, col_btn = st.columns([5, 2])
 with col_title:
     st.markdown("## ⛽ Live Gas Prices")
@@ -48,29 +48,34 @@ df = fetch_data()
 st.sidebar.header("Search Filters")
 
 # 🏙️ City Search
-city_query = st.sidebar.text_input("Enter City (e.g. Montreal)", value="Montreal")
+city_query = st.sidebar.text_input("Enter City", value="Montreal")
 
-# 🏷️ All Brands List
+# 🏷️ Brand Setup
 brand_list = df['brand'].dropna().unique().tolist()
 all_brands = sorted([str(b) for b in brand_list])
 
-# ⭐ FAVORITES MANAGEMENT
-st.sidebar.subheader("⭐ My Favorites")
-# This lets you choose which stations are your personal favorites
-my_favorites = st.sidebar.multiselect(
-    "Set your Favorite Brands", 
+st.sidebar.divider()
+
+# ⭐ FAVORITES SECTION (Your Preset)
+st.sidebar.subheader("⭐ Favorites Preset")
+my_fav_list = st.sidebar.multiselect(
+    "Define your Favorite Brands", 
     options=all_brands,
     default=["Esso", "Couche-Tard"]
 )
-show_favorites_only = st.sidebar.checkbox("Show Only My Favorites", value=True)
+use_favs = st.sidebar.toggle("Filter by Favorites Only", value=True)
 
-# 🔍 ADDITIONAL FILTERS (Only shows if favorites toggle is OFF)
-selected_brands = []
-if not show_favorites_only:
-    st.sidebar.divider()
-    selected_brands = st.sidebar.multiselect("Add Other Brands to Search", options=all_brands)
+st.sidebar.divider()
 
-# 📊 MONTREAL AVERAGE METRIC
+# 🔍 MANUAL BRAND FILTER (Independent)
+# We disable this visually if Favorites is toggled 'On' to avoid confusion
+manual_brands = st.sidebar.multiselect(
+    "Filter by Other Brands", 
+    options=all_brands,
+    disabled=use_favs
+)
+
+# 📊 MONTREAL AVERAGE
 if not df.empty:
     st.sidebar.divider()
     mtl_search = simplify("Montreal")
@@ -82,13 +87,13 @@ if not df.empty:
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
 
-# 1. Apply Brand Filtering
-if show_favorites_only and my_favorites:
-    results = results[results['brand'].isin(my_favorites)]
-elif selected_brands:
-    results = results[results['brand'].isin(selected_brands)]
+# Step 1: Filter by Brand (Priority given to Favorites Toggle)
+if use_favs and my_fav_list:
+    results = results[results['brand'].isin(my_fav_list)]
+elif manual_brands:
+    results = results[results['brand'].isin(manual_brands)]
 
-# 2. Apply City Filter
+# Step 2: Filter by City
 if city_query:
     search_term = simplify(city_query)
     results['s_addr'] = results['Address'].apply(simplify)
@@ -117,4 +122,4 @@ if not results.empty:
         use_container_width=True
     )
 else:
-    st.warning("No stations found. Adjust your filters in the sidebar.")
+    st.warning("No stations found. Adjust your filters or toggle off Favorites.")
