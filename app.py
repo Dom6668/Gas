@@ -52,10 +52,17 @@ st.sidebar.header("Search Filters")
 # 🏙️ City Search
 city_query = st.sidebar.text_input("Enter City", value="Montreal")
 
-# 🏷️ Brand Filter
+st.sidebar.divider()
+
+# 🏷️ BRAND FILTER SECTION
+st.sidebar.subheader("🏷️ Brand Filters")
+
+# Brand Toggle - ON by default
+show_selected_brands_only = st.sidebar.toggle("Show ONLY selected brands", value=True)
+
 brand_list = sorted(df['brand'].dropna().unique().tolist())
 selected_brands = st.sidebar.multiselect(
-    "Filter by Brand", 
+    "Select Brands:", 
     options=brand_list,
     default=["Esso", "Couche-Tard"]
 )
@@ -68,11 +75,8 @@ all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
 
 # SET YOUR DEFAULT STATIONS HERE
 my_target_stations = [
-    "Esso (2495 ch. Rockland, Mont-Royal)",
-    "Esso (180 boul. Crémazie ouest, Montréal)",
-    "Esso (790 boul. Crémazie est, Montréal)",
-    "Esso (7635 boul. Lacordaire, Montréal)",
-    "Esso (4225 rue Jarry est, Montréal)"
+    "Costco (300 Rue Bridge)", 
+    "Esso (123 Rue Sherbrooke)"
 ]
 safe_defaults = [s for s in my_target_stations if s in all_station_addresses]
 
@@ -82,7 +86,7 @@ my_fav_stations = st.sidebar.multiselect(
     default=safe_defaults
 )
 
-# Set the toggle to be ON by default as requested
+# Set the favorites toggle to be ON by default
 show_favs_only = st.sidebar.toggle("Show ONLY my favorite stations", value=True)
 
 # 📊 MONTREAL AVERAGE
@@ -97,12 +101,15 @@ if not df.empty:
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
 
+# Priority 1: Favorites Toggle
 if show_favs_only and my_fav_stations:
     results = results[results['Station_Address'].isin(my_fav_stations)]
 else:
-    if selected_brands:
+    # Priority 2: Brand Toggle Logic
+    if show_selected_brands_only and selected_brands:
         results = results[results['brand'].isin(selected_brands)]
     
+    # Priority 3: City Filter
     if city_query:
         search_term = simplify(city_query)
         results = results[
@@ -115,29 +122,28 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
-    # We create a column for the URL but we will hide it from view
+    # Create the Map URL
     results['Map_URL'] = results['Address'].apply(
         lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
     )
     
-    # Select only the columns you want to see, in your preferred order
+    # Select and order columns: Price (clickable), Address, Brand
     display_df = results[['Price', 'Address', 'brand', 'Map_URL']].copy()
     
     st.dataframe(
         display_df,
         column_config={
-           # This makes the Price column a clickable link using the Map_URL data
            "Price": st.column_config.LinkColumn(
                "Price (¢)", 
-               display_text=r"^(\d+\.\d+)$", # Uses a regex to keep the number visible
+               display_text=r"^(\d+\.\d+)$", 
                validate=None
            ),
            "Address": "Station Address",
            "brand": "Brand",
-           "Map_URL": None # This hides the URL column from the user
+           "Map_URL": None # Hide the URL column
         },
         hide_index=True,
         use_container_width=True
     )
 else:
-    st.warning("No stations found. Adjust your filters or toggle off 'Favorite Stations'.")
+    st.warning("No stations found. Adjust your filters or toggles.")
