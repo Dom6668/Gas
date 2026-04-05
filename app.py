@@ -69,8 +69,11 @@ all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
 # 👇 STEP 1: ADD YOUR DEFAULT STATIONS HERE
 # Copy the exact names from the app's dropdown to have them pre-selected
 my_target_stations = [
-    "Costco (300 Rue Bridge)", 
-    "Esso (123 Rue Sherbrooke)"
+    "Esso (2495 ch. Rockland, Mont-Royal)",
+    "Esso (180 boul. Crémazie ouest, Montréal)",
+    "Esso (790 boul. Crémazie est, Montréal)",
+    "Esso (7635 boul. Lacordaire, Montréal)",
+    "Esso (4225 rue Jarry est, Montréal)"
 ]
 safe_defaults = [s for s in my_target_stations if s in all_station_addresses]
 
