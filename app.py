@@ -73,7 +73,7 @@ if not df.empty:
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
 
-# 1. Apply City Filter
+# 2. Apply City Filter
 if city_query:
     search_term = simplify(city_query)
     df_temp = df.copy()
