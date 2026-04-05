@@ -26,7 +26,7 @@ def fetch_data():
     resp = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
     df = pd.DataFrame([f['properties'] for f in resp.json()['features']])
     df['Price'] = df['Prices'].apply(get_price)
-    # Create a unique label for favoriting specific addresses
+    # Combined label for the address-based favorites selector
     df['Station_Address'] = df['brand'] + " (" + df['Address'] + ")"
     return df
 
@@ -64,7 +64,6 @@ st.sidebar.divider()
 
 # ⭐ FAVORITE ADDRESSES
 st.sidebar.subheader("⭐ Favorite Stations")
-# This list pulls every unique address in the dataset
 all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
 my_fav_stations = st.sidebar.multiselect(
     "Select your usual stops:", 
@@ -77,6 +76,7 @@ show_favs_only = st.sidebar.toggle("Show ONLY my favorite stations", value=False
 if not df.empty:
     st.sidebar.divider()
     mtl_search = simplify("Montreal")
+    # This calculation remains independent of current filters to provide a steady benchmark
     mtl_stations = df[df['Address'].apply(simplify).str.contains(mtl_search)]
     if not mtl_stations['Price'].empty:
         mtl_avg = mtl_stations['Price'].mean()
@@ -85,21 +85,21 @@ if not df.empty:
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
 
-# Step 1: Handle Favorites Toggle (Prioritizes specific addresses)
+# Priority 1: If Favorites Toggle is ON, only show selected addresses
 if show_favs_only and my_fav_stations:
     results = results[results['Station_Address'].isin(my_fav_stations)]
 else:
-    # Step 2: Apply standard Brand Filter
+    # Priority 2: Apply standard Brand and City filters
     if selected_brands:
         results = results[results['brand'].isin(selected_brands)]
     
-    # Step 3: Apply City Filter
     if city_query:
         search_term = simplify(city_query)
-        # Temporary columns for search logic
-        results['s_addr'] = results['Address'].apply(simplify)
-        results['s_reg'] = results['Region'].apply(simplify)
-        results = results[(results['s_addr'].str.contains(search_term)) | (results['s_reg'].str.contains(search_term))]
+        # We apply filtering directly to the results dataframe
+        results = results[
+            results['Address'].apply(simplify).str.contains(search_term) | 
+            results['Region'].apply(simplify).str.contains(search_term)
+        ]
 
 # --- 6. DISPLAY RESULTS ---
 if not results.empty:
