@@ -103,36 +103,39 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
-    # 1. Create the Display DataFrame
+    # 1. Create a clean copy for display
     display_df = results[['Price', 'brand']].copy()
     
-    # 2. Add the actual Address TEXT to a helper column
+    # 2. Add the actual Address TEXT to a hidden helper column
     display_df['Address_Text'] = results['Address']
     
-    # 3. Put the actual URL into the 'Address' column
-    # The LinkColumn REQUIRES the data in this cell to be the actual URL
+    # 3. Create the Google Maps URL and put it IN the 'Address' column
+    # LinkColumn requires the actual data in the cell to be a URL
     display_df['Address'] = results['Address'].apply(
         lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
     )
     
-    # 4. Reorder: Price, Address, Brand
+    # 4. Final column order
     display_df = display_df[['Price', 'Address', 'brand', 'Address_Text']]
     
     st.dataframe(
         display_df,
         column_config={
            "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f"),
+           
+           # ✅ THE FIX:
+           # We use a Regex to tell Streamlit: "Don't show the URL, show the text from Address_Text"
            "Address": st.column_config.LinkColumn(
                "Station Address", 
-               # ✅ THIS IS THE FIX: 
-               # It tells Streamlit: "Use the text from Address_Text to label the link in Address"
-               display_text="^https://www.google.com/maps/search/?api=1&query=(.*)$" 
+               display_text=r"([^/]+)$" 
            ),
+           
            "brand": "Brand",
-           "Address_Text": None # Hide the helper column
+           "Address_Text": None # This hides the helper column from the table
         },
         hide_index=True,
         use_container_width=True
     )
+    st.caption("👆 Click an address to open in Google Maps")
 else:
     st.warning("No stations found. Adjust your filters or toggles.")
