@@ -76,7 +76,6 @@ if not df.empty:
     if not mtl_data['Price'].empty:
         mtl_avg = mtl_data['Price'].mean()
         st.sidebar.metric("Montreal Average", f"{mtl_avg:.1f}¢")
-)
 
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
