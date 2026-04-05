@@ -184,7 +184,3 @@ if city_query or selected_brands:
             hide_index=True,
             use_container_width=True
         )
-    else:
-        st.error("No stations found. Try broadening your search!")
-else:
-    st.info("👈 Search by City or Brand in the sidebar to begin.")
