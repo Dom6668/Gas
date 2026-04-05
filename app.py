@@ -58,9 +58,6 @@ with col_btn:
         fetch_data.clear()
         st.rerun()
 
-# Subtitle placed below the main header line
-st.markdown("Find the cheapest gas near you. Data updates every 5 minutes.")
-
 # Adjust spacing: -25px moves the line UP toward the price
 st.markdown('<div style="margin-top: -25px;"></div>', unsafe_allow_html=True)
 st.divider()
