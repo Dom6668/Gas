@@ -103,26 +103,32 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
-    # 1. Create the Map URL (Official Google Search API format)
-    results['Map_URL'] = results['Address'].apply(
+    # 1. Create a display dataframe
+    display_df = results[['Price', 'brand']].copy()
+    
+    # 2. Store the actual Address text for the 'display_text' mapping
+    display_df['Address_Text'] = results['Address']
+    
+    # 3. Put the actual URL into the 'Address' column
+    # Streamlit requires the column being clicked to contain the actual URL
+    display_df['Address'] = results['Address'].apply(
         lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
     )
     
-    # 2. Select and order columns: Price, Address, Brand
-    # We must include Map_URL in this list so the dataframe can "see" it
-    display_df = results[['Price', 'Address', 'brand', 'Map_URL']].copy()
+    # 4. Reorder: Price, Address, Brand
+    display_df = display_df[['Price', 'Address', 'brand', 'Address_Text']]
     
     st.dataframe(
         display_df,
         column_config={
            "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f"),
-           # ✅ This makes the ADDRESS the clickable part
            "Address": st.column_config.LinkColumn(
-               "Station Address (Click to Map)", 
-               display_text=None # This ensures the actual address text is shown
+               "Station Address", 
+               # ✅ THIS IS THE KEY: It hides the ugly URL and shows the Address text
+               display_text=r"([^/]+)$" # This regex logic or mapping handles the display
            ),
            "brand": "Brand",
-           "Map_URL": None # This hides the raw URL column from the user
+           "Address_Text": None # Hide the helper column
         },
         hide_index=True,
         use_container_width=True
