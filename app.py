@@ -67,6 +67,15 @@ selected_brands = st.sidebar.multiselect(
     "Filter by Brand", 
     options=all_brands,
     default=["Esso", "Couche-Tard"]
+
+# 📊 Montreal Average Metric
+if not df.empty:
+    st.sidebar.divider()
+    # Logic to find Montreal stations for the benchmark
+    mtl_data = df[df['Address'].apply(simplify).str.contains("montreal")]
+    if not mtl_data['Price'].empty:
+        mtl_avg = mtl_data['Price'].mean()
+        st.sidebar.metric("Montreal Average", f"{mtl_avg:.1f}¢")
 )
 
 # --- 5. FILTERING LOGIC ---
