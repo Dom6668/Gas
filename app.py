@@ -53,8 +53,8 @@ st.divider()
 st.sidebar.header("Search Filters")
 city_query = st.sidebar.text_input("Enter City", value="Montreal")
 
-show_selected_brands_only = st.sidebar.toggle("Show selected Brands", value=True)
-show_favs_only = st.sidebar.toggle("Favorite stations", value=True)
+show_selected_brands_only = st.sidebar.toggle("Show Brands", value=True)
+show_favs_only = st.sidebar.toggle("Show Favorite", value=True)
 
 brand_list = sorted(df['brand'].dropna().unique().tolist())
 selected_brands = st.sidebar.multiselect(
