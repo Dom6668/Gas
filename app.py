@@ -58,7 +58,7 @@ show_favs_only = st.sidebar.toggle("Show Favorite", value=True)
 
 brand_list = sorted(df['brand'].dropna().unique().tolist())
 selected_brands = st.sidebar.multiselect(
-    "Select Brands:", 
+    "Select Brands", 
     options=brand_list,
     default=["Esso", "Couche-Tard"]
 )
@@ -76,7 +76,7 @@ my_target_stations = [
 safe_defaults = [s for s in my_target_stations if s in all_station_addresses]
 
 my_fav_stations = st.sidebar.multiselect(
-    "Select your usual stops:", 
+    "Select Favorites", 
     options=all_station_addresses,
     default=safe_defaults
 )
