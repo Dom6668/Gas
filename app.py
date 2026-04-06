@@ -5,7 +5,7 @@ import unicodedata
 import urllib.parse
 
 # --- 1. APP CONFIG ---
-st.set_page_config(page_title="Quebec Gas Tracker", page_icon="⛽")
+st.set_page_config(page_title="Gas Tracker", page_icon="⛽")
 
 # --- 2. THE LOGIC ---
 def simplify(text):
@@ -47,7 +47,6 @@ with col_metric:
             st.metric("MTL Average", f"{mtl_avg:.1f}¢")
 
 st.markdown('<div style="margin-top: -25px;"></div>', unsafe_allow_html=True)
-st.divider()
 
 # --- 4. SIDEBAR SETUP ---
 st.sidebar.header("Search Filters")
