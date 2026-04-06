@@ -63,7 +63,6 @@ selected_brands = st.sidebar.multiselect(
     default=["Esso", "Couche-Tard"]
 )
 
-st.sidebar.divider()
 all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
 
 # --- USER CUSTOMIZATION ---
