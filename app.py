@@ -103,22 +103,36 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
-    # Prepare Display Data
-    display_df = results[['Price', 'Address', 'brand']].copy()
+    # 1. Create the official Google Maps search URL
+    # This format is highly reliable for triggering the Maps app or a new tab
+    results['Map_URL'] = results['Address'].apply(
+        lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
+    )
     
-    # Create the clickable markdown link for the Price column
-    def make_clickable_price(row):
-        addr_encoded = urllib.parse.quote(f"{row['Address']}, Quebec")
-        # Standard Google Maps Search link
-        url = f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
-        return f"[{row['Price']:.1f}¢]({url})"
-
-    display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
+    # 2. Select and order columns: Price, Address, Brand, and Map_URL
+    # We include Map_URL so the LinkColumn can use it as the destination
+    display_df = results[['Price', 'Address', 'brand', 'Map_URL']].copy()
     
-    # Final column selection for the table
-    final_table = display_df[['Price (¢)', 'Address', 'brand']]
+    st.dataframe(
+        display_df,
+        column_config={
+           # Format Price as a standard number again
+           "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f"),
+           
+           # ✅ THE FIX: Make the Address column a LinkColumn
+           # It uses the Address text for display and the Map_URL for the link
+           "Address": st.column_config.LinkColumn(
+               "Station Address", 
+               display_text=None  # This ensures the actual street address is shown
+           ),
+           
+           "brand": "Brand",
+           "Map_URL": None  # This hides the raw URL column from the table
+        },
+        hide_index=True,
+        use_container_width=True
+    )
     
-    # Displaying as Markdown to allow the hyperlink
-    st.markdown(final_table.to_markdown(index=False))
+    st.caption("👆 Click any address to open it in Google Maps")
 else:
     st.warning("No stations found. Adjust your filters or toggles.")
