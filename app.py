@@ -26,7 +26,7 @@ def fetch_data():
     resp = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
     df = pd.DataFrame([f['properties'] for f in resp.json()['features']])
     df['Price'] = df['Prices'].apply(get_price)
-    df['Station_Address'] = df['brand'] + " (" + df['Address'] + ")"
+    df['Station_Address'] = df['Brand'] + " (" + df['Address'] + ")"
     return df
 
 # Load Data Early for Header
@@ -55,7 +55,7 @@ city_query = st.sidebar.text_input("Enter City", value="Montreal")
 show_selected_brands_only = st.sidebar.toggle("Show Brands", value=True)
 show_favs_only = st.sidebar.toggle("Show Favorite", value=True)
 
-brand_list = sorted(df['Brand'].dropna().unique().tolist())
+brand_list = sorted(df['brand'].dropna().unique().tolist())
 selected_brands = st.sidebar.multiselect(
     "Select Brands", 
     options=brand_list,
