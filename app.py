@@ -26,7 +26,7 @@ def fetch_data():
     resp = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
     df = pd.DataFrame([f['properties'] for f in resp.json()['features']])
     df['Price'] = df['Prices'].apply(get_price)
-    df['Station_Address'] = df['Brand'] + " (" + df['Address'] + ")"
+    df['Station_Address'] = df['brand'] + " (" + df['Address'] + ")"
     return df
 
 # Load Data Early for Header
