@@ -163,26 +163,46 @@ else:
 
 # --- 6. DISPLAY RESULTS ---
 if not results.empty:
-    results = results.sort_values(by=['Distance', 'Price']) if has_distance else results.sort_values(by='Price')
+    # ✅ SORTING LOGIC: 
+    # If we have distance, we sort by Price first, then Distance.
+    # This ensures the cheapest stations are at the top.
+    if has_distance:
+        results = results.sort_values(by=['Price', 'Distance'])
+    else:
+        results = results.sort_values(by='Price')
+        
     st.success(f"Found {len(results)} stations")
 
-    # ✅ RELIABILITY FIX: Add a specific "Quick Links" section for your top 3 results
-    # This bypasses the Streamlit dataframe redirect bug entirely
-    st.markdown("#### 📍 Top Recommendations (Click to Map)")
+    # ✅ TOP RECOMMENDATIONS (The Cheapest Stations)
+    st.markdown("#### 💰 Cheapest Stations Found (Click to Map)")
+    
+    # Take the top 3 after the sort
     top_3 = results.head(3)
     cols = st.columns(3)
+    
     for i, (idx, row) in enumerate(top_3.iterrows()):
+        # Use official Google Maps search format to avoid Streamlit redirect loop
         addr_url = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(row['brand'] + ' ' + row['Address'] + ', Quebec')}"
+        
         with cols[i]:
-            st.markdown(f"**{row['Price']:.1f}¢** @ {row['brand']}\n\n[{row['Address']}]({addr_url})")
+            # Large, clickable headers for the cheapest prices
+            st.markdown(f"### {row['Price']:.1f}¢")
+            st.markdown(f"**{row['brand']}**")
+            if has_distance:
+                st.markdown(f"📍 {row['Distance']:.1f} km away")
+            st.markdown(f"[{row['Address']}]({addr_url})")
 
     st.divider()
 
-    # ✅ THE INTERACTIVE TABLE (For sorting and searching)
+    # --- FULL DATA TABLE ---
     st.markdown("#### 📊 All Results")
     
-    # We remove the LinkColumn configuration here because it is currently broken in Streamlit Cloud
-    display_df = results[['Price', 'Distance', 'brand', 'Address']].copy()
+    # Prepare display dataframe (excluding Map_URL to avoid messy table)
+    cols_to_show = ['Price']
+    if has_distance: cols_to_show.append('Distance')
+    cols_to_show.extend(['brand', 'Address'])
+    
+    display_df = results[cols_to_show].copy()
     
     st.dataframe(
         display_df,
@@ -196,5 +216,7 @@ if not results.empty:
         use_container_width=True
     )
     
+else:
+    st.warning("No stations found. Adjust your filters or increase your search radius.")
 else:
     st.warning("No stations found. Adjust your filters or increase your search radius.")
