@@ -71,6 +71,7 @@ my_target_stations = [
     "Esso (790 boul. Crémazie est, Montréal)",
     "Esso (7635 boul. Lacordaire, Montréal)",
     "Esso (4225 rue Jarry est, Montréal)"
+    "Esso (8380 boul. Langelier, Montréal)"
 ]
 safe_defaults = [s for s in my_target_stations if s in all_station_addresses]
 
