@@ -36,41 +36,42 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 # Cache the geocoding results to stay within free usage limits
 @st.cache_data(ttl=3600)
 def get_coordinates(query):
-    # Use a clear, unique user agent to avoid being blocked
-    geolocator = Nominatim(user_agent="quebec_gas_app_v2")
+    # Use a unique user agent to avoid being throttled
+    geolocator = Nominatim(user_agent="quebec_gas_finder_v3")
     
-    query = query.strip().upper()
+    # 1. Clean the input
+    clean_query = query.strip().upper()
     
-    # Check if it looks like a Canadian postal code
-    pc_pattern = re.compile(r'^([A-Z]\d[A-Z])[ -]?(\d[A-Z]\d)?$')
-    match = pc_pattern.match(query)
+    # Regex to extract the first 3 characters of a Canadian postal code
+    pc_match = re.search(r'([A-Z]\d[A-Z])', clean_query)
     
     try:
-        if match:
-            # ✅ IMPROVEMENT: Use a structured query
-            # We only use the first 3 digits (FSA) as it's far more reliable
-            fsa = match.group(1)
+        # Strategy A: Try the full query first with a strict Quebec filter
+        loc = geolocator.geocode(f"{clean_query}, Quebec, Canada", timeout=10)
+        
+        # Strategy B: If that fails and it looks like a postal code, try just the FSA (first 3 digits)
+        if not loc and pc_match:
+            fsa = pc_match.group(1)
+            # We use a structured query here which is more reliable for postal codes
             loc = geolocator.geocode(
                 query={
                     "postalcode": fsa,
-                    "country": "Canada",
-                    "state": "Quebec"
-                }
+                    "state": "Quebec",
+                    "country": "Canada"
+                },
+                timeout=10
             )
-        else:
-            # Standard search for city or street names
-            loc = geolocator.geocode(f"{query}, Quebec, Canada")
-            
-        if loc: 
+        
+        if loc:
             return loc.latitude, loc.longitude
-        return None, None
-    except Exception as e:
-        # If the API times out, try one more time with a simple string
-        try:
-            loc = geolocator.geocode(f"{query[:3]}, Quebec, Canada")
+        
+        # Strategy C: Final "Hail Mary" - search just the first 3 characters as a plain string
+        if pc_match:
+            loc = geolocator.geocode(f"{pc_match.group(1)}, Quebec, Canada", timeout=10)
             if loc: return loc.latitude, loc.longitude
-        except:
-            return None, None
+
+        return None, None
+    except Exception:
         return None, None
 
 @st.cache_data(ttl=300) 
