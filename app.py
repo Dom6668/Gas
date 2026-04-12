@@ -1,10 +1,10 @@
+import re
 import streamlit as st
 import pandas as pd
 import requests
 import unicodedata
 import urllib.parse
 import math
-import re
 from geopy.geocoders import Nominatim
 
 # --- 1. APP CONFIG ---
