@@ -36,29 +36,41 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 # Cache the geocoding results to stay within free usage limits
 @st.cache_data(ttl=3600)
 def get_coordinates(query):
-    geolocator = Nominatim(user_agent="qc_gas_tracker_app")
+    # Use a clear, unique user agent to avoid being blocked
+    geolocator = Nominatim(user_agent="quebec_gas_app_v2")
     
-    # Clean the input
-    query = query.strip()
+    query = query.strip().upper()
     
-    # Regex to detect Canadian Postal Codes (e.g., H1P 1X1 or h1p1x1)
-    pc_pattern = re.compile(r'^([A-Za-z]\d[A-Za-z])[ -]?(\d[A-Za-z]\d)$')
+    # Check if it looks like a Canadian postal code
+    pc_pattern = re.compile(r'^([A-Z]\d[A-Z])[ -]?(\d[A-Z]\d)?$')
     match = pc_pattern.match(query)
     
     try:
         if match:
-            # If it's a full postal code, only use the first 3 digits (FSA)
-            # This is significantly more reliable with free geocoders
-            fsa = match.group(1).upper()
-            loc = geolocator.geocode(f"{fsa}, Quebec, Canada")
+            # ✅ IMPROVEMENT: Use a structured query
+            # We only use the first 3 digits (FSA) as it's far more reliable
+            fsa = match.group(1)
+            loc = geolocator.geocode(
+                query={
+                    "postalcode": fsa,
+                    "country": "Canada",
+                    "state": "Quebec"
+                }
+            )
         else:
-            # Otherwise, search normally (for city or street names)
+            # Standard search for city or street names
             loc = geolocator.geocode(f"{query}, Quebec, Canada")
             
         if loc: 
             return loc.latitude, loc.longitude
         return None, None
-    except:
+    except Exception as e:
+        # If the API times out, try one more time with a simple string
+        try:
+            loc = geolocator.geocode(f"{query[:3]}, Quebec, Canada")
+            if loc: return loc.latitude, loc.longitude
+        except:
+            return None, None
         return None, None
 
 @st.cache_data(ttl=300) 
