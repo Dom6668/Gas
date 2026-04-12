@@ -3,9 +3,11 @@ import pandas as pd
 import requests
 import unicodedata
 import urllib.parse
+import math
+from geopy.geocoders import Nominatim
 
 # --- 1. APP CONFIG ---
-st.set_page_config(page_title="Gas Tracker", page_icon="⛽")
+st.set_page_config(page_title="Quebec Gas Tracker", page_icon="⛽", layout="wide")
 
 # --- 2. THE LOGIC ---
 def simplify(text):
@@ -20,16 +22,51 @@ def get_price(price_list):
             except: return None
     return None
 
+# Math formula to calculate distance between two GPS coordinates
+def calculate_distance(lat1, lon1, lat2, lon2):
+    if pd.isna(lat1) or pd.isna(lat2): return float('inf')
+    R = 6371.0 # Earth radius in km
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+# Cache the geocoder so it doesn't spam the free API
+@st.cache_data(ttl=3600)
+def get_coordinates(query):
+    geolocator = Nominatim(user_agent="qc_gas_tracker_app")
+    try:
+        # Appends Quebec, Canada to ensure it searches the right area
+        loc = geolocator.geocode(f"{query}, Quebec, Canada")
+        if loc: return loc.latitude, loc.longitude
+        return None, None
+    except:
+        return None, None
+
 @st.cache_data(ttl=300) 
 def fetch_data():
     url = "https://regieessencequebec.ca/stations.geojson.gz"
     resp = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
-    df = pd.DataFrame([f['properties'] for f in resp.json()['features']])
+    
+    # Extract properties AND coordinates
+    data = []
+    for f in resp.json()['features']:
+        props = f['properties']
+        # Grab GPS coordinates if they exist in the file
+        if f.get('geometry') and f['geometry'].get('coordinates'):
+            props['Lon'] = f['geometry']['coordinates'][0]
+            props['Lat'] = f['geometry']['coordinates'][1]
+        else:
+            props['Lon'], props['Lat'] = None, None
+        data.append(props)
+
+    df = pd.DataFrame(data)
     df['Price'] = df['Prices'].apply(get_price)
     df['Station_Address'] = df['brand'] + " (" + df['Address'] + ")"
     return df
 
-# Load Data Early for Header
+# Load Data Early
 df = fetch_data()
 
 # --- 3. UI HEADER ---
@@ -47,42 +84,47 @@ with col_metric:
             st.metric("MTL Average", f"{mtl_avg:.1f}¢")
 
 st.markdown('<div style="margin-top: -25px;"></div>', unsafe_allow_html=True)
+st.divider()
 
 # --- 4. SIDEBAR SETUP ---
-st.sidebar.header("Search Filters")
-city_query = st.sidebar.text_input("Enter City", value="Montreal")
+st.sidebar.header("📍 Location Search")
+location_query = st.sidebar.text_input("Enter Postal Code, Address, or City", value="Montreal")
+search_radius = st.sidebar.slider("Search Radius (km)", 1, 50, 5) # Default 5km radius
 
-show_selected_brands_only = st.sidebar.toggle("Show Brands", value=True)
-show_favs_only = st.sidebar.toggle("Show Favorite", value=True)
+st.sidebar.divider()
+# --- BRAND CONTROLS ---
+show_selected_brands_only = st.sidebar.toggle("Show ONLY selected brands", value=False)
+show_favs_only = st.sidebar.toggle("Show ONLY my favorite stations", value=False)
 
 brand_list = sorted(df['brand'].dropna().unique().tolist())
 selected_brands = st.sidebar.multiselect(
-    "Select Brands", 
+    "Select Brands:", 
     options=brand_list,
     default=["Esso", "Couche-Tard"]
 )
 
+st.sidebar.divider()
+# --- FAVORITES SELECTION ---
 all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
 
-# --- USER CUSTOMIZATION ---
 my_target_stations = [
     "Esso (2495 ch. Rockland, Mont-Royal)",
     "Esso (180 boul. Crémazie ouest, Montréal)",
     "Esso (790 boul. Crémazie est, Montréal)",
     "Esso (7635 boul. Lacordaire, Montréal)",
-    "Esso (4225 rue Jarry est, Montréal)",
-    "Esso (8380 boul. Langelier, Montréal)"
+    "Esso (4225 rue Jarry est, Montréal)"
 ]
 safe_defaults = [s for s in my_target_stations if s in all_station_addresses]
 
 my_fav_stations = st.sidebar.multiselect(
-    "Select Favorites", 
+    "Select your usual stops:", 
     options=all_station_addresses,
     default=safe_defaults
 )
 
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
+has_distance = False
 
 if show_favs_only and my_fav_stations:
     results = results[results['Station_Address'].isin(my_fav_stations)]
@@ -90,34 +132,64 @@ else:
     if show_selected_brands_only and selected_brands:
         results = results[results['brand'].isin(selected_brands)]
     
-    if city_query:
-        term = simplify(city_query)
-        results = results[
-            results['Address'].apply(simplify).str.contains(term) | 
-            results['Region'].apply(simplify).str.contains(term)
-        ]
+    # NEW: Geospatial Location Search
+    if location_query:
+        user_lat, user_lon = get_coordinates(location_query)
+        
+        if user_lat and user_lon:
+            # Calculate distance for every station
+            results['Distance'] = results.apply(
+                lambda row: calculate_distance(user_lat, user_lon, row['Lat'], row['Lon']), axis=1
+            )
+            # Filter by the radius slider
+            results = results[results['Distance'] <= search_radius]
+            has_distance = True
+        else:
+            st.sidebar.error("Could not find that location. Please try a different postal code or city.")
 
 # --- 6. DISPLAY RESULTS ---
 if not results.empty:
-    results = results.sort_values(by='Price')
+    # Sort by Distance first (if available), then by Price
+    if has_distance:
+        results = results.sort_values(by=['Distance', 'Price'])
+    else:
+        results = results.sort_values(by='Price')
+        
     st.success(f"Found {len(results)} stations")
     
-    # Prepare Display Data
-    display_df = results[['Price', 'Address', 'brand']].copy()
+    results['Map_URL'] = results['Address'].apply(
+        lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
+    )
     
-    # Create the clickable markdown link for the Price column
-    def make_clickable_price(row):
-        addr_encoded = urllib.parse.quote(f"{row['Address']}, Quebec")
-        # Standard Google Maps Search link
-        url = f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
-        return f"[{row['Price']:.1f}¢]({url})"
+    # Dynamically build the columns to display
+    cols_to_show = ['Price']
+    if has_distance: cols_to_show.append('Distance')
+    cols_to_show.extend(['Address', 'brand', 'Map_URL'])
+    
+    display_df = results[cols_to_show].copy()
+    
+    # Configure the table columns
+    col_config = {
+        "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f"),
+        "Address": st.column_config.LinkColumn(
+            "Station Address", 
+            display_text=None
+        ),
+        "brand": "Brand",
+        "Map_URL": None
+    }
+    
+    # Add Distance formatting if it exists
+    if has_distance:
+        col_config["Distance"] = st.column_config.NumberColumn("Away (km)", format="%.1f km")
 
-    display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
+    st.dataframe(
+        display_df,
+        column_config=col_config,
+        hide_index=True,
+        use_container_width=True
+    )
     
-    # Final column selection for the table
-    final_table = display_df[['Price (¢)', 'Address', 'brand']]
-    
-    # Displaying as Markdown to allow the hyperlink
-    st.markdown(final_table.to_markdown(index=False))
+    st.caption("👆 Click any address to open it in Google Maps")
 else:
-    st.warning("No stations found. Adjust your filters or toggles.")
+    st.warning("No stations found. Adjust your filters or increase your search radius.")
