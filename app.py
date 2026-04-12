@@ -157,6 +157,7 @@ show_favs_only = st.sidebar.toggle("Show ONLY my favorite stations", value=True)
 
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
+has_distance = False  # ✅ ADD THIS LINE HERE to initialize the variable
 
 if show_favs_only and my_fav_stations:
     results = results[results['Station_Address'].isin(my_fav_stations)]
@@ -164,8 +165,7 @@ else:
     if show_selected_brands_only and selected_brands:
         results = results[results['brand'].isin(selected_brands)]
     
-    # ✅ IMPROVED FILTERING: Combine City and Postal Code
-    # This ensures that even if you only type "H1P 1X1", the search is localized to the city.
+    # Improved filtering logic with City and Postal Code
     city_term = simplify(selected_city)
     postal_term = simplify(postal_query)
     
@@ -175,9 +175,17 @@ else:
         results['Region'].apply(simplify).str.contains(city_term)
     ]
     
-    # Then refine by postal code if provided
+    # If a postal code or specific address is entered, calculate distance
     if postal_term:
-        results = results[results['Address'].apply(simplify).str.contains(postal_term)]
+        user_lat, user_lon = get_coordinates(postal_query) # Uses your improved get_coordinates
+        
+        if user_lat and user_lon:
+            results['Distance'] = results.apply(
+                lambda row: calculate_distance(user_lat, user_lon, row['Lat'], row['Lon']), axis=1
+            )
+            # Only show stations within the slider radius
+            results = results[results['Distance'] <= search_radius]
+            has_distance = True # ✅ This now updates the initialized variable
 
 # --- 6. DISPLAY RESULTS ---
 if not results.empty:
