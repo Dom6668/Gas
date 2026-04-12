@@ -165,37 +165,36 @@ else:
 if not results.empty:
     results = results.sort_values(by=['Distance', 'Price']) if has_distance else results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
+
+    # ✅ RELIABILITY FIX: Add a specific "Quick Links" section for your top 3 results
+    # This bypasses the Streamlit dataframe redirect bug entirely
+    st.markdown("#### 📍 Top Recommendations (Click to Map)")
+    top_3 = results.head(3)
+    cols = st.columns(3)
+    for i, (idx, row) in enumerate(top_3.iterrows()):
+        addr_url = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(row['brand'] + ' ' + row['Address'] + ', Quebec')}"
+        with cols[i]:
+            st.markdown(f"**{row['Price']:.1f}¢** @ {row['brand']}\n\n[{row['Address']}]({addr_url})")
+
+    st.divider()
+
+    # ✅ THE INTERACTIVE TABLE (For sorting and searching)
+    st.markdown("#### 📊 All Results")
     
-    # ✅ THE FIX: Use the official Google Maps Search API
-    # We include 'Quebec' and the Brand to make the search pinpoint accurate
-    results['Map_URL'] = results.apply(
-        lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x['brand'] + ' ' + x['Address'] + ', Quebec')}", 
-        axis=1
-    )
-    
-    # Select columns (Map_URL must be included for the LinkColumn to work)
-    display_df = results[['Price', 'Distance', 'Address', 'brand', 'Map_URL']].copy()
+    # We remove the LinkColumn configuration here because it is currently broken in Streamlit Cloud
+    display_df = results[['Price', 'Distance', 'brand', 'Address']].copy()
     
     st.dataframe(
         display_df,
         column_config={
            "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f"),
            "Distance": st.column_config.NumberColumn("Away (km)", format="%.1f"),
-           
-           # ✅ LinkColumn configuration
-           "Address": st.column_config.LinkColumn(
-               "Station Address", 
-               # This tells Streamlit to use the Map_URL column as the target
-               display_text=None 
-           ),
-           
            "brand": "Brand",
-           "Map_URL": None # Hide the raw URL from the user
+           "Address": "Station Address"
         },
         hide_index=True,
         use_container_width=True
     )
     
-    st.caption("📍 Click an address to open navigation in a new tab.")
 else:
     st.warning("No stations found. Adjust your filters or increase your search radius.")
