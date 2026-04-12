@@ -189,8 +189,7 @@ if not results.empty:
     st.success(f"Found {len(results)} stations")
 
     # ✅ TOP RECOMMENDATIONS (The Cheapest Stations)
-    st.markdown("#### 💰 Cheapest Stations Found (Click to Map)")
-    
+     
     # Take the top 3 after the sort
     top_3 = results.head(3)
     cols = st.columns(3)
@@ -210,7 +209,7 @@ if not results.empty:
     st.divider()
 
     # --- FULL DATA TABLE ---
-    st.markdown("#### 📊 All Results")
+    st.markdown("#### All Results")
     
     # Prepare display dataframe (excluding Map_URL to avoid messy table)
     cols_to_show = ['Price']
