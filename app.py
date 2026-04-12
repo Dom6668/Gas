@@ -4,7 +4,6 @@ import requests
 import unicodedata
 import urllib.parse
 import math
-import re
 from geopy.geocoders import Nominatim
 
 # --- 1. APP CONFIG ---
@@ -37,23 +36,10 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 @st.cache_data(ttl=3600)
 def get_coordinates(query):
     geolocator = Nominatim(user_agent="qc_gas_tracker_app")
-    
-    # 1. Clean the input and check if it looks like a Canadian postal code
-    query = query.strip()
-    pc_pattern = re.compile(r'^([A-Za-z]\d[A-Za-z])[ -]?(\d[A-Za-z]\d)$')
-    match = pc_pattern.match(query)
-    
     try:
-        if match:
-            # 2. If it IS a postal code, only use the first 3 characters (the FSA)
-            fsa = match.group(1).upper()
-            loc = geolocator.geocode(f"{fsa}, Quebec, Canada")
-        else:
-            # 3. Otherwise, search the city or street name as normal
-            loc = geolocator.geocode(f"{query}, Quebec, Canada")
-            
-        if loc: 
-            return loc.latitude, loc.longitude
+        # Appends Quebec, Canada to ensure it searches the right area
+        loc = geolocator.geocode(f"{query}, Quebec, Canada")
+        if loc: return loc.latitude, loc.longitude
         return None, None
     except:
         return None, None
