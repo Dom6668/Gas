@@ -33,23 +33,26 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
 
-# Cache the geocoder so it doesn't spam the free API
+# Cache the geocoding results to stay within free usage limits
 @st.cache_data(ttl=3600)
 def get_coordinates(query):
     geolocator = Nominatim(user_agent="qc_gas_tracker_app")
     
-    # 1. Clean the input and check if it looks like a Canadian postal code
+    # Clean the input
     query = query.strip()
+    
+    # Regex to detect Canadian Postal Codes (e.g., H1P 1X1 or h1p1x1)
     pc_pattern = re.compile(r'^([A-Za-z]\d[A-Za-z])[ -]?(\d[A-Za-z]\d)$')
     match = pc_pattern.match(query)
     
     try:
         if match:
-            # 2. If it IS a postal code, only use the first 3 characters (the FSA)
+            # If it's a full postal code, only use the first 3 digits (FSA)
+            # This is significantly more reliable with free geocoders
             fsa = match.group(1).upper()
             loc = geolocator.geocode(f"{fsa}, Quebec, Canada")
         else:
-            # 3. Otherwise, search the city or street name as normal
+            # Otherwise, search normally (for city or street names)
             loc = geolocator.geocode(f"{query}, Quebec, Canada")
             
         if loc: 
