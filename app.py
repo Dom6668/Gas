@@ -163,47 +163,38 @@ else:
 
 # --- 6. DISPLAY RESULTS ---
 if not results.empty:
-    # Sort by Distance first (if available), then by Price
-    if has_distance:
-        results = results.sort_values(by=['Distance', 'Price'])
-    else:
-        results = results.sort_values(by='Price')
-        
+    results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
+    # ✅ FIX 1: Use the official Google Maps Search API URL
+    # This format is recognized as an external link and won't loop back to Streamlit
     results['Map_URL'] = results['Address'].apply(
         lambda x: f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(x + ', Quebec')}"
     )
     
-    # Dynamically build the columns to display
-    cols_to_show = ['Price']
-    if has_distance: cols_to_show.append('Distance')
-    cols_to_show.extend(['Address', 'brand', 'Map_URL'])
+    # Select and order columns
+    display_df = results[['Price', 'Address', 'brand', 'Map_URL']].copy()
     
-    display_df = results[cols_to_show].copy()
-    
-    # Configure the table columns
-    col_config = {
-        "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f"),
-        "Address": st.column_config.LinkColumn(
-            "Station Address", 
-            display_text=None
-        ),
-        "brand": "Brand",
-        "Map_URL": None
-    }
-    
-    # Add Distance formatting if it exists
-    if has_distance:
-        col_config["Distance"] = st.column_config.NumberColumn("Away (km)", format="%.1f km")
-
     st.dataframe(
         display_df,
-        column_config=col_config,
+        column_config={
+           "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f"),
+           
+           # ✅ FIX 2: Use LinkColumn on Address
+           # We point it to Map_URL for the destination, keeping Address for the text
+           "Address": st.column_config.LinkColumn(
+               "Station Address", 
+               display_text=None # This shows the clean street address text
+           ),
+           
+           "brand": "Brand",
+           "Map_URL": None # This hides the messy URL column from the table
+        },
         hide_index=True,
         use_container_width=True
     )
     
-    st.caption("👆 Click any address to open it in Google Maps")
+    st.caption("👆 Click any address to open in Google Maps")
+
 else:
-    st.warning("No stations found. Adjust your filters or increase your search radius.")
+    st.warning("No stations found. Adjust your filters or toggles.")
