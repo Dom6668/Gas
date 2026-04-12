@@ -218,5 +218,3 @@ if not results.empty:
     
 else:
     st.warning("No stations found. Adjust your filters or increase your search radius.")
-else:
-    st.warning("No stations found. Adjust your filters or increase your search radius.")
