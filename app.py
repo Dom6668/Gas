@@ -117,15 +117,17 @@ st.markdown('<div style="margin-top: -25px;"></div>', unsafe_allow_html=True)
 st.divider()
 
 # --- 4. SIDEBAR SETUP ---
-st.sidebar.header("📍 Location Search")
-location_query = st.sidebar.text_input("Enter Postal Code, Address, or City", value="Montreal")
-search_radius = st.sidebar.slider("Search Radius (km)", 1, 50, 5) # Default 5km radius
+st.sidebar.header("Search Filters")
+
+# ✅ NEW: Dropdown for City Selection
+city_list = ["Montreal", "Quebec", "Laval"]
+selected_city = st.sidebar.selectbox("Select City", options=city_list, index=0)
+
+# ✅ NEW: Optional Postal Code / Specific Address Input
+postal_query = st.sidebar.text_input("Postal Code or Street (Optional)", value="")
 
 st.sidebar.divider()
-# --- BRAND CONTROLS ---
-show_selected_brands_only = st.sidebar.toggle("Show ONLY selected brands", value=False)
-show_favs_only = st.sidebar.toggle("Show ONLY my favorite stations", value=False)
-
+show_selected_brands_only = st.sidebar.toggle("Show ONLY selected brands", value=True)
 brand_list = sorted(df['brand'].dropna().unique().tolist())
 selected_brands = st.sidebar.multiselect(
     "Select Brands:", 
@@ -134,9 +136,9 @@ selected_brands = st.sidebar.multiselect(
 )
 
 st.sidebar.divider()
-# --- FAVORITES SELECTION ---
 all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
 
+# --- USER CUSTOMIZATION ---
 my_target_stations = [
     "Esso (2495 ch. Rockland, Mont-Royal)",
     "Esso (180 boul. Crémazie ouest, Montréal)",
@@ -151,10 +153,10 @@ my_fav_stations = st.sidebar.multiselect(
     options=all_station_addresses,
     default=safe_defaults
 )
+show_favs_only = st.sidebar.toggle("Show ONLY my favorite stations", value=True)
 
 # --- 5. FILTERING LOGIC ---
 results = df.copy()
-has_distance = False
 
 if show_favs_only and my_fav_stations:
     results = results[results['Station_Address'].isin(my_fav_stations)]
@@ -162,20 +164,20 @@ else:
     if show_selected_brands_only and selected_brands:
         results = results[results['brand'].isin(selected_brands)]
     
-    # NEW: Geospatial Location Search
-    if location_query:
-        user_lat, user_lon = get_coordinates(location_query)
-        
-        if user_lat and user_lon:
-            # Calculate distance for every station
-            results['Distance'] = results.apply(
-                lambda row: calculate_distance(user_lat, user_lon, row['Lat'], row['Lon']), axis=1
-            )
-            # Filter by the radius slider
-            results = results[results['Distance'] <= search_radius]
-            has_distance = True
-        else:
-            st.sidebar.error("Could not find that location. Please try a different postal code or city.")
+    # ✅ IMPROVED FILTERING: Combine City and Postal Code
+    # This ensures that even if you only type "H1P 1X1", the search is localized to the city.
+    city_term = simplify(selected_city)
+    postal_term = simplify(postal_query)
+    
+    # Filter by selected city first
+    results = results[
+        results['Address'].apply(simplify).str.contains(city_term) | 
+        results['Region'].apply(simplify).str.contains(city_term)
+    ]
+    
+    # Then refine by postal code if provided
+    if postal_term:
+        results = results[results['Address'].apply(simplify).str.contains(postal_term)]
 
 # --- 6. DISPLAY RESULTS ---
 if not results.empty:
