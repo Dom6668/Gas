@@ -1,4 +1,3 @@
-from streamlit_gsheets import GSheetsConnection
 import streamlit as st
 import pandas as pd
 import requests
@@ -30,7 +29,7 @@ def fetch_data():
     df['Station_Address'] = df['brand'] + " (" + df['Address'] + ")"
     return df
 
-# Load Data
+# Load Data Early for Header
 df = fetch_data()
 
 # --- 3. UI HEADER ---
@@ -49,129 +48,76 @@ with col_metric:
 
 st.markdown('<div style="margin-top: -25px;"></div>', unsafe_allow_html=True)
 
-# ✅ TAB DEFINITION
-tab1, tab2 = st.tabs(["⛽ Live Prices", "📈 History & Trends"])
+# --- 4. SIDEBAR SETUP ---
+st.sidebar.header("Search Filters")
+city_query = st.sidebar.text_input("Enter City", value="Montreal")
 
-with tab1:
-    # --- 4. SIDEBAR SETUP (Now inside Tab 1) ---
-    st.sidebar.header("Search Filters")
-    city_query = st.sidebar.text_input("Enter City", value="Montreal")
+show_selected_brands_only = st.sidebar.toggle("Show Brands", value=True)
+show_favs_only = st.sidebar.toggle("Show Favorite", value=True)
 
-    show_selected_brands_only = st.sidebar.toggle("Show Brands", value=True)
-    show_favs_only = st.sidebar.toggle("Show Favorite", value=True)
+brand_list = sorted(df['brand'].dropna().unique().tolist())
+selected_brands = st.sidebar.multiselect(
+    "Select Brands", 
+    options=brand_list,
+    default=["Esso", "Couche-Tard"]
+)
 
-    brand_list = sorted(df['brand'].dropna().unique().tolist())
-    selected_brands = st.sidebar.multiselect(
-        "Select Brands", 
-        options=brand_list,
-        default=["Esso", "Couche-Tard"]
-    )
+all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
 
-    all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
+# --- USER CUSTOMIZATION ---
+my_target_stations = [
+    "Esso (2495 ch. Rockland, Mont-Royal)",
+    "Esso (180 boul. Crémazie ouest, Montréal)",
+    "Esso (790 boul. Crémazie est, Montréal)",
+    "Esso (7635 boul. Lacordaire, Montréal)",
+    "Esso (4225 rue Jarry est, Montréal)",
+    "Esso (8380 boul. Langelier, Montréal)"
+]
+safe_defaults = [s for s in my_target_stations if s in all_station_addresses]
 
-    # --- USER CUSTOMIZATION ---
-    my_target_stations = [
-        "Esso (2495 ch. Rockland, Mont-Royal)",
-        "Esso (180 boul. Crémazie ouest, Montréal)",
-        "Esso (790 boul. Crémazie est, Montréal)",
-        "Esso (7635 boul. Lacordaire, Montréal)",
-        "Esso (4225 rue Jarry est, Montréal)",
-        "Esso (8380 boul. Langelier, Montréal)"
-    ]
-    safe_defaults = [s for s in my_target_stations if s in all_station_addresses]
+my_fav_stations = st.sidebar.multiselect(
+    "Select Favorites", 
+    options=all_station_addresses,
+    default=safe_defaults
+)
 
-    my_fav_stations = st.sidebar.multiselect(
-        "Select Favorites", 
-        options=all_station_addresses,
-        default=safe_defaults
-    )
+# --- 5. FILTERING LOGIC ---
+results = df.copy()
 
-    # --- 5. FILTERING LOGIC ---
-    results = df.copy()
-
-    if show_favs_only and my_fav_stations:
-        results = results[results['Station_Address'].isin(my_fav_stations)]
-    else:
-        if show_selected_brands_only and selected_brands:
-            results = results[results['brand'].isin(selected_brands)]
-        
-        if city_query:
-            term = simplify(city_query)
-            results = results[
-                results['Address'].apply(simplify).str.contains(term) | 
-                results['Region'].apply(simplify).str.contains(term)
-            ]
-
-    # --- 6. DISPLAY RESULTS ---
-    if not results.empty:
-        results = results.sort_values(by='Price')
-        st.success(f"Found {len(results)} stations")
-        
-        display_df = results[['Price', 'Address', 'brand']].copy()
-        
-        def make_clickable_price(row):
-            addr_encoded = urllib.parse.quote(f"{row['Address']}, Quebec")
-            url = f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
-            return f"[{row['Price']:.1f}¢]({url})"
-
-        display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
-        final_table = display_df[['Price (¢)', 'Address', 'brand']]
-        
-        st.markdown(final_table.to_markdown(index=False))
-    else:
-        st.warning("No stations found. Adjust your filters or toggles.")
-
-with tab2:
-    st.header("Price Tracking")
-    st.write("Daily min/max for favorites will appear here.")
-    st.info("Historical data and trend tracking are coming soon.")
-
-from streamlit_gsheets import GSheetsConnection
-
-# --- 7. PRICE TRACKING & HISTORY ---
-with tab2:
-    st.header("📈 Price History & Trends")
+if show_favs_only and my_fav_stations:
+    results = results[results['Station_Address'].isin(my_fav_stations)]
+else:
+    if show_selected_brands_only and selected_brands:
+        results = results[results['brand'].isin(selected_brands)]
     
-    try:
-        # Establish the connection
-        conn = st.connection("gsheets", type=GSheetsConnection)
-        
-        # Read existing data (ttl=0 ensures we don't look at old cached data)
-        existing_data = conn.read(ttl=0) 
-        
-        if existing_data is not None and not existing_data.empty:
-            # Only look at history for your chosen favorites
-            fav_history = existing_data[existing_data['Station'].isin(my_fav_stations)]
-            
-            if not fav_history.empty:
-                # Calculate the Min and Max from the Google Sheet records
-                daily_min = fav_history['Price'].min()
-                daily_max = fav_history['Price'].max()
-                
-                c1, c2 = st.columns(2)
-                c1.metric("Today's Low (Favs)", f"{daily_min:.1f}¢")
-                c2.metric("Today's High (Favs)", f"{daily_max:.1f}¢")
-                
-                st.divider()
-                st.subheader("Price Trend")
-                # Plotting the price over time
-                st.line_chart(fav_history.set_index('Date')['Price'])
-        else:
-            st.info("No data found in the sheet yet. Click the button below to start your log.")
-        
-        if st.button("Log Current Prices to Cloud"):
-            # Prepare current prices of favorites to be saved
-            new_rows = results[['Station_Address', 'Price']].copy()
-            new_rows.columns = ['Station', 'Price']
-            new_rows['Date'] = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M")
-            
-            # Combine old data with new data and push back to Google
-            updated_df = pd.concat([existing_data, new_rows], ignore_index=True) if existing_data is not None else new_rows
-            conn.update(data=updated_df)
-            st.success("Prices recorded!")
-            st.rerun()
-            
-    except Exception as e:
-        st.error(f"Connection failed: {e}") # This will show the real error message
-        st.info("1. Check Secrets formatting (use double quotes).")
-        st.info("2. Ensure the Google Sheet is shared as 'Editor'.")
+    if city_query:
+        term = simplify(city_query)
+        results = results[
+            results['Address'].apply(simplify).str.contains(term) | 
+            results['Region'].apply(simplify).str.contains(term)
+        ]
+
+# --- 6. DISPLAY RESULTS ---
+if not results.empty:
+    results = results.sort_values(by='Price')
+    st.success(f"Found {len(results)} stations")
+    
+    # Prepare Display Data
+    display_df = results[['Price', 'Address', 'brand']].copy()
+    
+    # Create the clickable markdown link for the Price column
+    def make_clickable_price(row):
+        addr_encoded = urllib.parse.quote(f"{row['Address']}, Quebec")
+        # Standard Google Maps Search link
+        url = f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
+        return f"[{row['Price']:.1f}¢]({url})"
+
+    display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
+    
+    # Final column selection for the table
+    final_table = display_df[['Price (¢)', 'Address', 'brand']]
+    
+    # Displaying as Markdown to allow the hyperlink
+    st.markdown(final_table.to_markdown(index=False))
+else:
+    st.warning("No stations found. Adjust your filters or toggles.")
