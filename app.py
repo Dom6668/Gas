@@ -172,5 +172,6 @@ with tab2:
             st.rerun()
             
     except Exception as e:
-        st.error("Connection failed. Check your Secrets formatting.")
-        st.info("Also, ensure your Google Sheet is set to 'Anyone with the link can view'.")
+        st.error(f"Connection failed: {e}") # This will show the real error message
+        st.info("1. Check Secrets formatting (use double quotes).")
+        st.info("2. Ensure the Google Sheet is shared as 'Editor'.")
