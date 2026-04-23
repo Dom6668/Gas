@@ -50,11 +50,11 @@ st.markdown('<div style="margin-top: -25px;"></div>', unsafe_allow_html=True)
 
 # ✅ NEW: Create Tabs
 tab1, tab2 = st.tabs(["⛽ Live Prices", "📈 History & Trends"])
-
 with tab1:
     # --- Put ALL your existing Sidebar and Display code in here ---
     # (Section 4, 5, and 6 go inside this block, indented)
     # The app will function exactly as it does now.
+
 with tab2:
     st.markdown("### Favorite Stations Price History")
     st.info("Historical data will appear here...")
