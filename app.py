@@ -46,8 +46,6 @@ with col_metric:
             mtl_avg = mtl_stations['Price'].mean()
             st.metric("MTL Average", f"{mtl_avg:.1f}¢")
 
-st.markdown('<div style="margin-top: -25px;"></div>', unsafe_allow_html=True)
-
 # ✅ NEW: Create Tabs
 tab1, tab2 = st.tabs(["⛽ Live Prices", "📈 History & Trends"])
 
@@ -60,6 +58,8 @@ with tab2:
     st.markdown("### Favorite Stations Price History")
     st.info("Historical data will appear here...")
     # This is where we will pull from the database and draw a chart
+
+st.markdown('<div style="margin-top: -25px;"></div>', unsafe_allow_html=True)
 
 # --- 4. SIDEBAR SETUP ---
 st.sidebar.header("Search Filters")
