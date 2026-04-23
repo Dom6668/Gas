@@ -124,3 +124,38 @@ with tab2:
     st.header("Price Tracking")
     st.write("Daily min/max for favorites will appear here.")
     st.info("Historical data and trend tracking are coming soon.")
+
+from streamlit_gsheets import GSheetsConnection
+
+# --- 7. PRICE TRACKING LOGIC (New Section) ---
+def record_prices(current_results):
+    # Connect to your Google Sheet
+    conn = st.connection("gsheets", type=GSheetsConnection)
+    
+    # Create the data to log
+    new_entries = current_results[['Station_Address', 'Price']].copy()
+    new_entries['Date'] = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M")
+    
+    # In a real setup, you would use conn.create() or conn.update() 
+    # to append these rows to your specific spreadsheet URL.
+    # For now, we will focus on displaying the Min/Max logic.
+    return new_entries
+
+with tab2:
+    st.header("📈 Price History & Trends")
+    
+    if show_favs_only and not results.empty:
+        # Calculate Daily Stats
+        daily_min = results['Price'].min()
+        daily_max = results['Price'].max()
+        
+        col1, col2 = st.columns(2)
+        col1.metric("Today's Low (Favs)", f"{daily_min:.1f}¢", delta_color="inverse")
+        col2.metric("Today's High (Favs)", f"{daily_max:.1f}¢", delta_color="normal")
+        
+        # Show a simple record of what would be sent to the Cloud
+        st.write("### Current Log Entry")
+        log_data = record_prices(results)
+        st.dataframe(log_data, use_container_width=True)
+    else:
+        st.info("Select 'Show Favorite' in the sidebar to see tracking stats for your usual stations.")
