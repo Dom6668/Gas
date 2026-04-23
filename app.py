@@ -1,3 +1,4 @@
+from streamlit_gsheets import GSheetsConnection
 import streamlit as st
 import pandas as pd
 import requests
@@ -135,38 +136,41 @@ with tab2:
         # Establish the connection
         conn = st.connection("gsheets", type=GSheetsConnection)
         
-        # Read existing data to calculate Min/Max
-        existing_data = conn.read(ttl=0) # ttl=0 forces a fresh check
+        # Read existing data (ttl=0 ensures we don't look at old cached data)
+        existing_data = conn.read(ttl=0) 
         
-        if not existing_data.empty:
-            # Filter history for just your favorites
+        if existing_data is not None and not existing_data.empty:
+            # Only look at history for your chosen favorites
             fav_history = existing_data[existing_data['Station'].isin(my_fav_stations)]
             
             if not fav_history.empty:
-                # Calculate Daily Stats
+                # Calculate the Min and Max from the Google Sheet records
                 daily_min = fav_history['Price'].min()
                 daily_max = fav_history['Price'].max()
                 
                 c1, c2 = st.columns(2)
-                c1.metric("Today's Low (Favs)", f"{daily_min:.1f}¢", delta_color="inverse")
-                c2.metric("Today's High (Favs)", f"{daily_max:.1f}¢", delta_color="normal")
+                c1.metric("Today's Low (Favs)", f"{daily_min:.1f}¢")
+                c2.metric("Today's High (Favs)", f"{daily_max:.1f}¢")
                 
                 st.divider()
                 st.subheader("Price Trend")
+                # Plotting the price over time
                 st.line_chart(fav_history.set_index('Date')['Price'])
+        else:
+            st.info("No data found in the sheet yet. Click the button below to start your log.")
         
-        # Button to manually log current prices
         if st.button("Log Current Prices to Cloud"):
+            # Prepare current prices of favorites to be saved
             new_rows = results[['Station_Address', 'Price']].copy()
             new_rows.columns = ['Station', 'Price']
             new_rows['Date'] = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M")
             
-            # Append to the Google Sheet
-            updated_df = pd.concat([existing_data, new_rows], ignore_index=True)
+            # Combine old data with new data and push back to Google
+            updated_df = pd.concat([existing_data, new_rows], ignore_index=True) if existing_data is not None else new_rows
             conn.update(data=updated_df)
             st.success("Prices recorded!")
             st.rerun()
             
     except Exception as e:
-        st.error("Connection to Google Sheets failed. Check your Secrets format.")
-        st.info("Ensure the sheet is shared so 'Anyone with the link' can View.")
+        st.error("Connection failed. Check your Secrets formatting.")
+        st.info("Also, ensure your Google Sheet is set to 'Anyone with the link can view'.")
