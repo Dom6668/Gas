@@ -29,7 +29,7 @@ def fetch_data():
     df['Station_Address'] = df['brand'] + " (" + df['Address'] + ")"
     return df
 
-# Load Data Early for Header
+# Load Data
 df = fetch_data()
 
 # --- 3. UI HEADER ---
@@ -48,71 +48,60 @@ with col_metric:
 
 st.markdown('<div style="margin-top: -25px;"></div>', unsafe_allow_html=True)
 
-# ✅ NEW: Create Tabs
-tab1, tab2 = st.tabs(["⛽ Live Prices", "📈 History & Trends"])
-with tab1:
-    # --- Put ALL your existing Sidebar and Display code in here ---
-    # (Section 4, 5, and 6 go inside this block, indented)
-    # The app will function exactly as it does now.
-
-with tab2:
-    st.markdown("### Favorite Stations Price History")
-    st.info("Historical data will appear here...")
-    # This is where we will pull from the database and draw a chart
-
-# --- 4. SIDEBAR SETUP ---
-st.sidebar.header("Search Filters")
-city_query = st.sidebar.text_input("Enter City", value="Montreal")
-
-show_selected_brands_only = st.sidebar.toggle("Show Brands", value=True)
-show_favs_only = st.sidebar.toggle("Show Favorite", value=True)
-
-brand_list = sorted(df['brand'].dropna().unique().tolist())
-selected_brands = st.sidebar.multiselect(
-    "Select Brands", 
-    options=brand_list,
-    default=["Esso", "Couche-Tard"]
-)
-
-all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
-
-# --- USER CUSTOMIZATION ---
-my_target_stations = [
-    "Esso (2495 ch. Rockland, Mont-Royal)",
-    "Esso (180 boul. Crémazie ouest, Montréal)",
-    "Esso (790 boul. Crémazie est, Montréal)",
-    "Esso (7635 boul. Lacordaire, Montréal)",
-    "Esso (4225 rue Jarry est, Montréal)",
-    "Esso (8380 boul. Langelier, Montréal)"
-]
-safe_defaults = [s for s in my_target_stations if s in all_station_addresses]
-
-my_fav_stations = st.sidebar.multiselect(
-    "Select Favorites", 
-    options=all_station_addresses,
-    default=safe_defaults
-)
-
-# --- 5. FILTERING LOGIC ---
-results = df.copy()
-
-if show_favs_only and my_fav_stations:
-    results = results[results['Station_Address'].isin(my_fav_stations)]
-else:
-    if show_selected_brands_only and selected_brands:
-        results = results[results['brand'].isin(selected_brands)]
-    
-    if city_query:
-        term = simplify(city_query)
-        results = results[
-            results['Address'].apply(simplify).str.contains(term) | 
-            results['Region'].apply(simplify).str.contains(term)
-        ]
-
-# --- 6. DISPLAY RESULTS ---
+# ✅ TAB DEFINITION
 tab1, tab2 = st.tabs(["⛽ Live Prices", "📈 History & Trends"])
 
 with tab1:
+    # --- 4. SIDEBAR SETUP (Now inside Tab 1) ---
+    st.sidebar.header("Search Filters")
+    city_query = st.sidebar.text_input("Enter City", value="Montreal")
+
+    show_selected_brands_only = st.sidebar.toggle("Show Brands", value=True)
+    show_favs_only = st.sidebar.toggle("Show Favorite", value=True)
+
+    brand_list = sorted(df['brand'].dropna().unique().tolist())
+    selected_brands = st.sidebar.multiselect(
+        "Select Brands", 
+        options=brand_list,
+        default=["Esso", "Couche-Tard"]
+    )
+
+    all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
+
+    # --- USER CUSTOMIZATION ---
+    my_target_stations = [
+        "Esso (2495 ch. Rockland, Mont-Royal)",
+        "Esso (180 boul. Crémazie ouest, Montréal)",
+        "Esso (790 boul. Crémazie est, Montréal)",
+        "Esso (7635 boul. Lacordaire, Montréal)",
+        "Esso (4225 rue Jarry est, Montréal)",
+        "Esso (8380 boul. Langelier, Montréal)"
+    ]
+    safe_defaults = [s for s in my_target_stations if s in all_station_addresses]
+
+    my_fav_stations = st.sidebar.multiselect(
+        "Select Favorites", 
+        options=all_station_addresses,
+        default=safe_defaults
+    )
+
+    # --- 5. FILTERING LOGIC ---
+    results = df.copy()
+
+    if show_favs_only and my_fav_stations:
+        results = results[results['Station_Address'].isin(my_fav_stations)]
+    else:
+        if show_selected_brands_only and selected_brands:
+            results = results[results['brand'].isin(selected_brands)]
+        
+        if city_query:
+            term = simplify(city_query)
+            results = results[
+                results['Address'].apply(simplify).str.contains(term) | 
+                results['Region'].apply(simplify).str.contains(term)
+            ]
+
+    # --- 6. DISPLAY RESULTS ---
     if not results.empty:
         results = results.sort_values(by='Price')
         st.success(f"Found {len(results)} stations")
@@ -127,7 +116,6 @@ with tab1:
         display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
         final_table = display_df[['Price (¢)', 'Address', 'brand']]
         
-        # This displays the table inside Tab 1
         st.markdown(final_table.to_markdown(index=False))
     else:
         st.warning("No stations found. Adjust your filters or toggles.")
@@ -135,3 +123,4 @@ with tab1:
 with tab2:
     st.header("Price Tracking")
     st.write("Daily min/max for favorites will appear here.")
+    st.info("Historical data and trend tracking are coming soon.")
