@@ -127,35 +127,46 @@ with tab2:
 
 from streamlit_gsheets import GSheetsConnection
 
-# --- 7. PRICE TRACKING LOGIC (New Section) ---
-def record_prices(current_results):
-    # Connect to your Google Sheet
-    conn = st.connection("gsheets", type=GSheetsConnection)
-    
-    # Create the data to log
-    new_entries = current_results[['Station_Address', 'Price']].copy()
-    new_entries['Date'] = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M")
-    
-    # In a real setup, you would use conn.create() or conn.update() 
-    # to append these rows to your specific spreadsheet URL.
-    # For now, we will focus on displaying the Min/Max logic.
-    return new_entries
-
+# --- 7. PRICE TRACKING & HISTORY ---
 with tab2:
     st.header("📈 Price History & Trends")
     
-    if show_favs_only and not results.empty:
-        # Calculate Daily Stats
-        daily_min = results['Price'].min()
-        daily_max = results['Price'].max()
+    try:
+        # Establish the connection
+        conn = st.connection("gsheets", type=GSheetsConnection)
         
-        col1, col2 = st.columns(2)
-        col1.metric("Today's Low (Favs)", f"{daily_min:.1f}¢", delta_color="inverse")
-        col2.metric("Today's High (Favs)", f"{daily_max:.1f}¢", delta_color="normal")
+        # Read existing data to calculate Min/Max
+        existing_data = conn.read(ttl=0) # ttl=0 forces a fresh check
         
-        # Show a simple record of what would be sent to the Cloud
-        st.write("### Current Log Entry")
-        log_data = record_prices(results)
-        st.dataframe(log_data, use_container_width=True)
-    else:
-        st.info("Select 'Show Favorite' in the sidebar to see tracking stats for your usual stations.")
+        if not existing_data.empty:
+            # Filter history for just your favorites
+            fav_history = existing_data[existing_data['Station'].isin(my_fav_stations)]
+            
+            if not fav_history.empty:
+                # Calculate Daily Stats
+                daily_min = fav_history['Price'].min()
+                daily_max = fav_history['Price'].max()
+                
+                c1, c2 = st.columns(2)
+                c1.metric("Today's Low (Favs)", f"{daily_min:.1f}¢", delta_color="inverse")
+                c2.metric("Today's High (Favs)", f"{daily_max:.1f}¢", delta_color="normal")
+                
+                st.divider()
+                st.subheader("Price Trend")
+                st.line_chart(fav_history.set_index('Date')['Price'])
+        
+        # Button to manually log current prices
+        if st.button("Log Current Prices to Cloud"):
+            new_rows = results[['Station_Address', 'Price']].copy()
+            new_rows.columns = ['Station', 'Price']
+            new_rows['Date'] = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M")
+            
+            # Append to the Google Sheet
+            updated_df = pd.concat([existing_data, new_rows], ignore_index=True)
+            conn.update(data=updated_df)
+            st.success("Prices recorded!")
+            st.rerun()
+            
+    except Exception as e:
+        st.error("Connection to Google Sheets failed. Check your Secrets format.")
+        st.info("Ensure the sheet is shared so 'Anyone with the link' can View.")
