@@ -114,11 +114,11 @@ else:
 tab1, tab2 = st.tabs(["⛽ Live Prices", "📈 History & Trends"])
 
 with tab1:
+    # Everything inside tab1 MUST be indented by 4 spaces
     if not results.empty:
         results = results.sort_values(by='Price')
         st.success(f"Found {len(results)} stations")
         
-        # ... (all your existing display code for the table goes here) ...
         display_df = results[['Price', 'Address', 'brand']].copy()
         
         def make_clickable_price(row):
@@ -128,11 +128,14 @@ with tab1:
 
         display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
         final_table = display_df[['Price (¢)', 'Address', 'brand']]
+        
+        # Displaying the table
         st.markdown(final_table.to_markdown(index=False))
     else:
         st.warning("No stations found. Adjust your filters or toggles.")
 
 with tab2:
-    # ✅ Adding this line prevents the IndentationError
+    # Everything inside tab2 MUST also be indented by 4 spaces
     st.header("Price Tracking")
-    st.info("Historical data and favorite station trends will appear here once connected.")
+    st.write("This section will track the daily min and max for your favorites.")
+    st.info("Record keeping will appear here once the database is connected.")
