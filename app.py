@@ -120,6 +120,7 @@ with tab1:
         
         # ... (all your existing display code for the table goes here) ...
         display_df = results[['Price', 'Address', 'brand']].copy()
+        
         def make_clickable_price(row):
             addr_encoded = urllib.parse.quote(f"{row['Address']}, Quebec")
             url = f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
@@ -134,4 +135,4 @@ with tab1:
 with tab2:
     # ✅ Adding this line prevents the IndentationError
     st.header("Price Tracking")
-    st.write("Historical data and daily min/max will be displayed here.")
+    st.info("Historical data and favorite station trends will appear here once connected.")
