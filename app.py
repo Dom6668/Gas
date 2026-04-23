@@ -46,6 +46,8 @@ with col_metric:
             mtl_avg = mtl_stations['Price'].mean()
             st.metric("MTL Average", f"{mtl_avg:.1f}¢")
 
+st.markdown('<div style="margin-top: -25px;"></div>', unsafe_allow_html=True)
+
 # ✅ NEW: Create Tabs
 tab1, tab2 = st.tabs(["⛽ Live Prices", "📈 History & Trends"])
 
@@ -58,8 +60,6 @@ with tab2:
     st.markdown("### Favorite Stations Price History")
     st.info("Historical data will appear here...")
     # This is where we will pull from the database and draw a chart
-
-st.markdown('<div style="margin-top: -25px;"></div>', unsafe_allow_html=True)
 
 # --- 4. SIDEBAR SETUP ---
 st.sidebar.header("Search Filters")
@@ -111,26 +111,27 @@ else:
         ]
 
 # --- 6. DISPLAY RESULTS ---
-if not results.empty:
-    results = results.sort_values(by='Price')
-    st.success(f"Found {len(results)} stations")
-    
-    # Prepare Display Data
-    display_df = results[['Price', 'Address', 'brand']].copy()
-    
-    # Create the clickable markdown link for the Price column
-    def make_clickable_price(row):
-        addr_encoded = urllib.parse.quote(f"{row['Address']}, Quebec")
-        # Standard Google Maps Search link
-        url = f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
-        return f"[{row['Price']:.1f}¢]({url})"
+tab1, tab2 = st.tabs(["⛽ Live Prices", "📈 History & Trends"])
 
-    display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
-    
-    # Final column selection for the table
-    final_table = display_df[['Price (¢)', 'Address', 'brand']]
-    
-    # Displaying as Markdown to allow the hyperlink
-    st.markdown(final_table.to_markdown(index=False))
-else:
-    st.warning("No stations found. Adjust your filters or toggles.")
+with tab1:
+    if not results.empty:
+        results = results.sort_values(by='Price')
+        st.success(f"Found {len(results)} stations")
+        
+        # ... (all your existing display code for the table goes here) ...
+        display_df = results[['Price', 'Address', 'brand']].copy()
+        def make_clickable_price(row):
+            addr_encoded = urllib.parse.quote(f"{row['Address']}, Quebec")
+            url = f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
+            return f"[{row['Price']:.1f}¢]({url})"
+
+        display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
+        final_table = display_df[['Price (¢)', 'Address', 'brand']]
+        st.markdown(final_table.to_markdown(index=False))
+    else:
+        st.warning("No stations found. Adjust your filters or toggles.")
+
+with tab2:
+    # ✅ Adding this line prevents the IndentationError
+    st.header("Price Tracking")
+    st.write("Historical data and daily min/max will be displayed here.")
