@@ -114,32 +114,25 @@ else:
 tab1, tab2 = st.tabs(["⛽ Live Prices", "📈 History & Trends"])
 
 with tab1:
-    # All code below 'with tab1' must be indented by exactly 4 spaces
     if not results.empty:
         results = results.sort_values(by='Price')
         st.success(f"Found {len(results)} stations")
         
-        # Prepare Display Data
         display_df = results[['Price', 'Address', 'brand']].copy()
         
-        # Create the clickable markdown link for the Price column
         def make_clickable_price(row):
             addr_encoded = urllib.parse.quote(f"{row['Address']}, Quebec")
-            # Standard Google Maps Search link
             url = f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
             return f"[{row['Price']:.1f}¢]({url})"
 
         display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
-        
-        # Final column selection for the table
         final_table = display_df[['Price (¢)', 'Address', 'brand']]
         
-        # Displaying as Markdown to allow the hyperlink
+        # This displays the table inside Tab 1
         st.markdown(final_table.to_markdown(index=False))
     else:
         st.warning("No stations found. Adjust your filters or toggles.")
 
 with tab2:
-    # All code below 'with tab2' must be indented by exactly 4 spaces
     st.header("Price Tracking")
-    st.write("This tab will soon track your favorite stations' daily min and max.")
+    st.write("Daily min/max for favorites will appear here.")
