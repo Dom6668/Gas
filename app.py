@@ -101,8 +101,11 @@ else:
 if not results.empty:
     results = results.sort_values(by='Price')
         
-    # 1. Calculate average for comparison
-    current_avg = results['Price'].mean()
+# 1. Pull the Montreal Average calculated in Section 3
+    # We use a fallback to the result's own average if MTL data isn't found
+    mtl_search = simplify("Montreal")
+    mtl_stations = df[df['Address'].apply(simplify).str.contains(mtl_search)]
+    baseline_avg = mtl_stations['Price'].mean() if not mtl_stations.empty else results['Price'].mean()
     
     # 2. Prepare Display Data
     display_df = results[['Price', 'Address', 'brand']].copy()
@@ -111,12 +114,15 @@ if not results.empty:
         addr_encoded = urllib.parse.quote(f"{row['Address']}, Quebec")
         url = f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
         price_val = row['Price']
-        if price_val < current_avg:
-            indicator = "🟢"  # Below average
-        elif price_val == current_avg:
-            indicator = "⚪"  # Exactly average
+        
+        # Now comparing against the Montreal Baseline (191.1) 
+        # instead of the favorites average
+        if price_val < baseline_avg:
+            indicator = "🟢"  # Below city average
+        elif price_val == baseline_avg:
+            indicator = "⚪"  # At city average
         else:
-            indicator = "🔴"  # Above average
+            indicator = "🔴"  # Above city average (191.9 will now be Red)
             
         return f"{indicator} **[{price_val:.1f}]({url})**"
 
