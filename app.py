@@ -102,44 +102,22 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
-    # 1. Calculate the average of the CURRENTLY filtered results
-    current_avg = results['Price'].mean()
-    
-    # 2. Prepare Display Data
+    # Prepare Display Data
     display_df = results[['Price', 'Address', 'brand']].copy()
     
-    # 3. HTML function for colored links
-    def make_colored_link(row):
+    # Create the clickable markdown link for the Price column
+    def make_clickable_price(row):
         addr_encoded = urllib.parse.quote(f"{row['Address']}, Quebec")
+        # Standard Google Maps Search link
         url = f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
-        
-        # Determine hex color
-        # Green: #28a745 | Red: #dc3545
-        text_color = "#28a745" if row['Price'] < current_avg else "#dc3545"
-        
-        # Create an HTML link with inline CSS to force the color
-        return f'<a href="{url}" target="_blank" style="color: {text_color}; font-weight: bold; text-decoration: none;">{row["Price"]:.1f}¢</a>'
+        return f"[{row['Price']:.1f}¢]({url})"
 
-    display_df['Price (¢)'] = display_df.apply(make_colored_link, axis=1)
+    display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
     
-    # 4. Final column selection
+    # Final column selection for the table
     final_table = display_df[['Price (¢)', 'Address', 'brand']]
     
-    # 5. Convert to HTML and display
-    # We use .to_html() instead of .to_markdown() because markdown blocks HTML links
-    html_table = final_table.to_html(escape=False, index=False)
-    
-    # Basic styling to make the table look like a clean Streamlit table
-    st.markdown(
-        f"""
-        <style>
-            table {{ width: 100%; border-collapse: collapse; }}
-            th {{ text-align: left; border-bottom: 2px solid #f0f2f6; padding: 10px; }}
-            td {{ padding: 10px; border-bottom: 1px solid #f0f2f6; }}
-        </style>
-        {html_table}
-        """, 
-        unsafe_allow_html=True
-    )
+    # Displaying as Markdown to allow the hyperlink
+    st.markdown(final_table.to_markdown(index=False))
 else:
     st.warning("No stations found. Adjust your filters or toggles.")
