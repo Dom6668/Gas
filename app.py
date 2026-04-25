@@ -117,6 +117,7 @@ if not results.empty:
 
     display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
     final_table = display_df[['Price (¢)', 'Address', 'brand']]
+    final_table.columns = ['Price (¢)', 'Address', 'Brand']
     
     # --- CSS FOR MOBILE MAX-WIDTH & WRAPPING ---
     st.markdown("""
