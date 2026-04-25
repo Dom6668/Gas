@@ -44,7 +44,7 @@ with col_metric:
         mtl_stations = df[df['Address'].apply(simplify).str.contains(mtl_search)]
         if not mtl_stations['Price'].empty:
             mtl_avg = mtl_stations['Price'].mean()
-            st.metric("MTL Average", f"{mtl_avg:.1f}¢")
+            st.metric("MTL Average", f"{mtl_avg:.1f}")
 
 st.markdown('<div style="margin-top: -25px;"></div>', unsafe_allow_html=True)
 
@@ -118,11 +118,11 @@ if not results.empty:
         else:
             indicator = "🔴"  # Above average
             
-        return f"{indicator} **[{price_val:.1f}¢]({url})**"
+        return f"{indicator} **[{price_val:.1f}]({url})**"
 
-    display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
-    final_table = display_df[['Price (¢)', 'Address', 'brand']]
-    final_table.columns = ['Price (¢)', 'Address', 'Brand']
+    display_df['Price'] = display_df.apply(make_clickable_price, axis=1)
+    final_table = display_df[['Price', 'Address', 'brand']]
+    final_table.columns = ['Price', 'Address', 'Brand']
     
     # --- CSS TO CENTRE ONLY THE FIRST ROW (HEADER) ---
     st.markdown("""
