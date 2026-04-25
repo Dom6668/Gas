@@ -115,7 +115,7 @@ if not results.empty:
     display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
     
     # Final column selection for the table
-    final_table = display_df[['Price (¢)', 'Address', 'Brand']]
+    final_table = display_df[['Price (¢)', 'Address', 'brand']]
     
     # Displaying as Markdown to allow the hyperlink
     st.markdown(final_table.to_markdown(index=False))
