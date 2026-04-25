@@ -109,8 +109,8 @@ if not results.empty:
     # This adds a small green/red circle next to the price
     def get_status(price):
         if price < current_avg:
-            return "🟢 Low"
-        return "🔴 High"
+            return "🟢"
+        return "🔴"
     
     results['Status'] = results['Price'].apply(get_status)
     
@@ -128,7 +128,7 @@ if not results.empty:
         column_config={
             "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f"),
             "Map Link": st.column_config.LinkColumn("View on Map", display_text="Open 📍"),
-            "Status": st.column_config.TextColumn("Comparison")
+            "Status": st.column_config.TextColumn("⬆⬇")
         },
         hide_index=True,
         use_container_width=True
