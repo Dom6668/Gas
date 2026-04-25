@@ -140,12 +140,6 @@ if not results.empty:
                 padding: 8px !important;
                 border-bottom: 2px solid #f0f2f6;
             }
-            /* Target all data rows (aligned left) */
-            td {
-                text-align: left !important;
-                padding: 8px !important;
-                border-bottom: 1px solid #f0f2f6;
-            }
             /* Keep columns compact */
             td:nth-child(1), td:nth-child(3) {
                 width: 1% !important;
