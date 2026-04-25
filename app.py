@@ -125,27 +125,26 @@ if not results.empty:
     final_table = display_df[['Price (¢)', 'Address', 'brand']]
     final_table.columns = ['Price (¢)', 'Address', 'Brand']
     
-   # --- CSS TO CENTRE ONLY THE FIRST ROW (HEADER) ---
+    # --- CSS FOR MOBILE MAX-WIDTH & WRAPPING ---
     st.markdown("""
         <style>
             table {
                 width: 100% !important;
-                max-width: 400px !important;
+                max-width: 400px !important; /* Average phone width */
                 margin-left: 0;
                 border-collapse: collapse;
             }
-            /* Target ONLY the header row */
-            th {
-                text-align: center !important;
+            th, td {
+                text-align: left;
                 padding: 8px !important;
-                border-bottom: 2px solid #f0f2f6;
+                border-bottom: 1px solid #f0f2f6;
             }
-            /* Keep columns compact */
+            /* Price and Brand columns: Shrink to fit */
             td:nth-child(1), td:nth-child(3) {
                 width: 1% !important;
                 white-space: nowrap !important;
             }
-            /* Address column wrapping */
+            /* Address column: Allow wrapping to keep the table narrow */
             td:nth-child(2) {
                 white-space: normal !important;
                 word-wrap: break-word;
