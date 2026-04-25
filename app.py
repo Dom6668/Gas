@@ -102,7 +102,7 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
-    # 1. Calculate average for the color indicators
+    # 1. Calculate average for comparison
     current_avg = results['Price'].mean()
     
     # 2. Prepare Display Data
@@ -111,8 +111,6 @@ if not results.empty:
     def make_clickable_price(row):
         addr_encoded = urllib.parse.quote(f"{row['Address']}, Quebec")
         url = f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
-        
-        # Keep your indicators and bold text
         price_val = row['Price']
         indicator = "🟢" if price_val < current_avg else "⚪"
         return f"{indicator} **[{price_val:.1f}¢]({url})**"
@@ -120,24 +118,34 @@ if not results.empty:
     display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
     final_table = display_df[['Price (¢)', 'Address', 'brand']]
     
-    # --- CSS TO AUTO-SIZE COLUMNS ---
-    # This targets the table data (td) and header (th) to wrap content tightly
+    # --- CSS FOR MOBILE MAX-WIDTH & WRAPPING ---
     st.markdown("""
         <style>
             table {
-                width: auto !important; /* Prevents table from stretching to 100% */
+                width: 100% !important;
+                max-width: 400px !important; /* Average phone width */
                 margin-left: 0;
-                margin-right: auto;
+                border-collapse: collapse;
             }
             th, td {
-                white-space: nowrap !important; /* Prevents text from wrapping to new lines */
-                width: 1% !important; /* Forces columns to collapse to their smallest size */
-                padding: 5px 15px !important; /* Keeps a small gap between columns */
+                text-align: left;
+                padding: 8px !important;
+                border-bottom: 1px solid #f0f2f6;
+            }
+            /* Price and Brand columns: Shrink to fit */
+            td:nth-child(1), td:nth-child(3) {
+                width: 1% !important;
+                white-space: nowrap !important;
+            }
+            /* Address column: Allow wrapping to keep the table narrow */
+            td:nth-child(2) {
+                white-space: normal !important;
+                word-wrap: break-word;
             }
         </style>
     """, unsafe_allow_html=True)
 
-    # 3. Display the original table
+    # 3. Display the table
     st.markdown(final_table.to_markdown(index=False))
 else:
     st.warning("No stations found. Adjust your filters or toggles.")
