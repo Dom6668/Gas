@@ -102,36 +102,42 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
-    # 1. Calculate the average for comparison
+    # 1. Calculate average for the color indicators
     current_avg = results['Price'].mean()
     
-    # 2. Add a visual indicator column (Emoji + Logic)
-    # This adds a small green/red circle next to the price
-    def get_status(price):
-        if price < current_avg:
-            return "🟢"
-        return "🔴"
+    # 2. Prepare Display Data
+    display_df = results[['Price', 'Address', 'brand']].copy()
     
-    results['Status'] = results['Price'].apply(get_status)
+    def make_clickable_price(row):
+        addr_encoded = urllib.parse.quote(f"{row['Address']}, Quebec")
+        url = f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
+        
+        # Keep your indicators and bold text
+        price_val = row['Price']
+        indicator = "🟢" if price_val < current_avg else "⚪"
+        return f"{indicator} **[{price_val:.1f}¢]({url})**"
+
+    display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
+    final_table = display_df[['Price (¢)', 'Address', 'brand']]
     
-    # 3. Create the Google Maps Link column
-    def make_maps_link(addr):
-        addr_encoded = urllib.parse.quote(f"{addr}, Quebec")
-        return f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
+    # --- CSS TO AUTO-SIZE COLUMNS ---
+    # This targets the table data (td) and header (th) to wrap content tightly
+    st.markdown("""
+        <style>
+            table {
+                width: auto !important; /* Prevents table from stretching to 100% */
+                margin-left: 0;
+                margin-right: auto;
+            }
+            th, td {
+                white-space: nowrap !important; /* Prevents text from wrapping to new lines */
+                width: 1% !important; /* Forces columns to collapse to their smallest size */
+                padding: 5px 15px !important; /* Keeps a small gap between columns */
+            }
+        </style>
+    """, unsafe_allow_html=True)
 
-    results['Map Link'] = results['Address'].apply(make_maps_link)
-
-    # 4. Use st.dataframe with Column Configuration
-    # This keeps the Streamlit "Look and Feel" perfectly
-    st.dataframe(
-        results[['Status', 'Price', 'brand', 'Address', 'Map Link']],
-        column_config={
-            "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f"),
-            "Map Link": st.column_config.LinkColumn("View on Map", display_text="Open 📍"),
-            "Status": st.column_config.TextColumn("⬆⬇")
-        },
-        hide_index=True,
-        use_container_width=True
-    )
+    # 3. Display the original table
+    st.markdown(final_table.to_markdown(index=False))
 else:
     st.warning("No stations found. Adjust your filters or toggles.")
