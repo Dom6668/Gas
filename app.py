@@ -102,44 +102,36 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
-    # 1. Calculate the average of the CURRENTLY filtered results
+    # 1. Calculate the average for comparison
     current_avg = results['Price'].mean()
     
-    # 2. Prepare Display Data
-    display_df = results[['Price', 'Address', 'brand']].copy()
+    # 2. Add a visual indicator column (Emoji + Logic)
+    # This adds a small green/red circle next to the price
+    def get_status(price):
+        if price < current_avg:
+            return "🟢 Low"
+        return "🔴 High"
     
-    # 3. HTML function for colored links
-    def make_colored_link(row):
-        addr_encoded = urllib.parse.quote(f"{row['Address']}, Quebec")
-        url = f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
-        
-        # Determine hex color
-        # Green: #28a745 | Red: #dc3545
-        text_color = "#28a745" if row['Price'] < current_avg else "#dc3545"
-        
-        # Create an HTML link with inline CSS to force the color
-        return f'<a href="{url}" target="_blank" style="color: {text_color}; font-weight: bold; text-decoration: none;">{row["Price"]:.1f}¢</a>'
+    results['Status'] = results['Price'].apply(get_status)
+    
+    # 3. Create the Google Maps Link column
+    def make_maps_link(addr):
+        addr_encoded = urllib.parse.quote(f"{addr}, Quebec")
+        return f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
 
-    display_df['Price (¢)'] = display_df.apply(make_colored_link, axis=1)
-    
-    # 4. Final column selection
-    final_table = display_df[['Price (¢)', 'Address', 'brand']]
-    
-    # 5. Convert to HTML and display
-    # We use .to_html() instead of .to_markdown() because markdown blocks HTML links
-    html_table = final_table.to_html(escape=False, index=False)
-    
-    # Basic styling to make the table look like a clean Streamlit table
-    st.markdown(
-        f"""
-        <style>
-            table {{ width: 100%; border-collapse: collapse; }}
-            th {{ text-align: left; border-bottom: 2px solid #f0f2f6; padding: 10px; }}
-            td {{ padding: 10px; border-bottom: 1px solid #f0f2f6; }}
-        </style>
-        {html_table}
-        """, 
-        unsafe_allow_html=True
+    results['Map Link'] = results['Address'].apply(make_maps_link)
+
+    # 4. Use st.dataframe with Column Configuration
+    # This keeps the Streamlit "Look and Feel" perfectly
+    st.dataframe(
+        results[['Status', 'Price', 'brand', 'Address', 'Map Link']],
+        column_config={
+            "Price": st.column_config.NumberColumn("Price (¢)", format="%.1f"),
+            "Map Link": st.column_config.LinkColumn("View on Map", display_text="Open 📍"),
+            "Status": st.column_config.TextColumn("Comparison")
+        },
+        hide_index=True,
+        use_container_width=True
     )
 else:
     st.warning("No stations found. Adjust your filters or toggles.")
