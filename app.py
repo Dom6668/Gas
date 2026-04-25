@@ -142,7 +142,7 @@ if not results.empty:
             }
             /* Target all data rows (aligned left) */
             td {
-                text-align: left !important;
+                text-align: center !important;
                 padding: 8px !important;
                 border-bottom: 1px solid #f0f2f6;
             }
