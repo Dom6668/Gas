@@ -102,31 +102,44 @@ if not results.empty:
     results = results.sort_values(by='Price')
     st.success(f"Found {len(results)} stations")
     
-    # Calculate the average of the CURRENTLY filtered results
+    # 1. Calculate the average of the CURRENTLY filtered results
     current_avg = results['Price'].mean()
     
-    # Prepare Display Data
+    # 2. Prepare Display Data
     display_df = results[['Price', 'Address', 'brand']].copy()
     
-    # Updated function to include color logic
-    def make_clickable_price(row):
+    # 3. HTML function for colored links
+    def make_colored_link(row):
         addr_encoded = urllib.parse.quote(f"{row['Address']}, Quebec")
         url = f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
         
-        # Determine color: Green if below average, Red if above
-        # Using Markdown colored text syntax
-        price_val = row['Price']
-        color = "green" if price_val < current_avg else "red"
+        # Determine hex color
+        # Green: #28a745 | Red: #dc3545
+        text_color = "#28a745" if row['Price'] < current_avg else "#dc3545"
         
-        # We wrap the clickable link in a colored span
-        return f":{color}[[{price_val:.1f}¢]({url})]"
+        # Create an HTML link with inline CSS to force the color
+        return f'<a href="{url}" target="_blank" style="color: {text_color}; font-weight: bold; text-decoration: none;">{row["Price"]:.1f}¢</a>'
 
-    display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
+    display_df['Price (¢)'] = display_df.apply(make_colored_link, axis=1)
     
-    # Final column selection for the table
+    # 4. Final column selection
     final_table = display_df[['Price (¢)', 'Address', 'brand']]
     
-    # Displaying as Markdown
-    st.markdown(final_table.to_markdown(index=False))
+    # 5. Convert to HTML and display
+    # We use .to_html() instead of .to_markdown() because markdown blocks HTML links
+    html_table = final_table.to_html(escape=False, index=False)
+    
+    # Basic styling to make the table look like a clean Streamlit table
+    st.markdown(
+        f"""
+        <style>
+            table {{ width: 100%; border-collapse: collapse; }}
+            th {{ text-align: left; border-bottom: 2px solid #f0f2f6; padding: 10px; }}
+            td {{ padding: 10px; border-bottom: 1px solid #f0f2f6; }}
+        </style>
+        {html_table}
+        """, 
+        unsafe_allow_html=True
+    )
 else:
     st.warning("No stations found. Adjust your filters or toggles.")
