@@ -112,7 +112,13 @@ if not results.empty:
         addr_encoded = urllib.parse.quote(f"{row['Address']}, Quebec")
         url = f"https://www.google.com/maps/search/?api=1&query={addr_encoded}"
         price_val = row['Price']
-        indicator = "🟢" if price_val < current_avg else "⚪"
+        if price_val < current_avg:
+            indicator = "🟢"  # Below average
+        elif price_val == current_avg:
+            indicator = "⚪"  # Exactly average
+        else:
+            indicator = "🔴"  # Above average
+            
         return f"{indicator} **[{price_val:.1f}¢]({url})**"
 
     display_df['Price (¢)'] = display_df.apply(make_clickable_price, axis=1)
