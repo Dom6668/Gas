@@ -100,8 +100,7 @@ else:
 # --- 6. DISPLAY RESULTS ---
 if not results.empty:
     results = results.sort_values(by='Price')
-    st.success(f"Found {len(results)} stations")
-    
+        
     # 1. Calculate average for comparison
     current_avg = results['Price'].mean()
     
