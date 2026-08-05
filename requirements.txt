@@ -1,5 +1,4 @@
-starlette<0.39.0
-streamlit
+streamlit>=1.40.0
 pandas
 requests
 tabulate
