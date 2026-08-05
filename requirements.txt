@@ -2,3 +2,4 @@ streamlit
 pandas
 requests
 tabulate
+streamlit>=1.40.0
