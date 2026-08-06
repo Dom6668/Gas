@@ -60,6 +60,8 @@ selected_brands = st.sidebar.multiselect(
     "Select Brands", 
     options=brand_list,
     default=["Esso", "Couche-Tard"]
+
+top_n = st.sidebar.slider("Show Top N Cheapest", min_value=1, max_value=20, value=5)
 )
 
 all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
@@ -100,7 +102,7 @@ else:
 
 # --- 6. DISPLAY RESULTS ---
 if not results.empty:
-    results = results.sort_values(by='Price')
+    results = results.sort_values(by='Price').head(top_n)
         
 # 1. Pull the Montreal Average calculated in Section 3
     # We use a fallback to the result's own average if MTL data isn't found
