@@ -54,14 +54,13 @@ city_query = st.sidebar.text_input("Enter City", value="Montreal")
 
 show_selected_brands_only = st.sidebar.toggle("Show Brands", value=True)
 show_favs_only = st.sidebar.toggle("Show Favorite", value=True)
+top_n = st.sidebar.slider("Show Top N Cheapest", min_value=1, max_value=20, value=5)
 
 brand_list = sorted(df['brand'].dropna().unique().tolist())
 selected_brands = st.sidebar.multiselect(
     "Select Brands", 
     options=brand_list,
     default=["Esso", "Couche-Tard"]
-
-top_n = st.sidebar.slider("Show Top N Cheapest", min_value=1, max_value=20, value=5)
 )
 
 all_station_addresses = sorted(df['Station_Address'].dropna().unique().tolist())
