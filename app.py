@@ -102,7 +102,7 @@ else:
 
 # --- 6. DISPLAY RESULTS ---
 if not results.empty:
-   results = results.sort_values(by='Price')
+    results = results.sort_values(by='Price')
     if show_favs_only:
         results = results.head(top_n)
         
