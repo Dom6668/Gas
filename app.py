@@ -54,7 +54,9 @@ city_query = st.sidebar.text_input("Enter City", value="Montreal")
 
 show_selected_brands_only = st.sidebar.toggle("Show Brands", value=True)
 show_favs_only = st.sidebar.toggle("Show Favorite", value=True)
-top_n = st.sidebar.slider("Show Top N Cheapest", min_value=1, max_value=20, value=5)
+limit_cheapest = st.sidebar.toggle("Limit to Cheapest", value=True)
+if limit_cheapest:
+    top_n = st.sidebar.slider("Show Top N", min_value=1, max_value=20, value=5)
 
 brand_list = sorted(df['brand'].dropna().unique().tolist())
 selected_brands = st.sidebar.multiselect(
@@ -101,7 +103,9 @@ else:
 
 # --- 6. DISPLAY RESULTS ---
 if not results.empty:
-    results = results.sort_values(by='Price').head(top_n)
+    results = results.sort_values(by='Price')
+    if limit_cheapest:
+        results = results.head(top_n)
         
 # 1. Pull the Montreal Average calculated in Section 3
     # We use a fallback to the result's own average if MTL data isn't found
