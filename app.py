@@ -54,8 +54,7 @@ city_query = st.sidebar.text_input("Enter City", value="Montreal")
 
 show_selected_brands_only = st.sidebar.toggle("Show Brands", value=True)
 show_favs_only = st.sidebar.toggle("Show Favorite", value=True)
-limit_cheapest = st.sidebar.toggle("Remove Slider", value=True)
-if limit_cheapest:
+if show_favs_only:
     top_n = st.sidebar.slider("# of Stations to Show", min_value=1, max_value=20, value=5)
 
 brand_list = sorted(df['brand'].dropna().unique().tolist())
@@ -103,8 +102,8 @@ else:
 
 # --- 6. DISPLAY RESULTS ---
 if not results.empty:
-    results = results.sort_values(by='Price')
-    if limit_cheapest:
+   results = results.sort_values(by='Price')
+    if show_favs_only:
         results = results.head(top_n)
         
 # 1. Pull the Montreal Average calculated in Section 3
