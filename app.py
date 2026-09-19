@@ -54,7 +54,7 @@ city_query = st.sidebar.text_input("Enter City", value="Montreal")
 
 show_selected_brands_only = st.sidebar.toggle("Show Brands", value=True)
 show_favs_only = st.sidebar.toggle("Show Favorite", value=True)
-limit_cheapest = st.sidebar.toggle("Limit to Cheapest", value=True)
+limit_cheapest = st.sidebar.toggle("Remove Slider", value=True)
 if limit_cheapest:
     top_n = st.sidebar.slider("# of Stations to Show", min_value=1, max_value=20, value=5)
 
